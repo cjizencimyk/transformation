@@ -1,5 +1,5 @@
-// Transformation : fonctionne hors ligne. Version 5423502424
-const VERSION = 'tf-5423502424';
+// Transformation : fonctionne hors ligne. Version ea7fd90130
+const VERSION = 'tf-ea7fd90130';
 const CORE = ["./", "index.html", "app.js", "data.js", "anim.js", "foods.js", "manifest.webmanifest", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "favicon-64.png", "icon.svg", "vendor/zxing.min.js", "fonts/fraunces-latin-full-normal.woff2", "fonts/figtree-latin-wght-normal.woff2"];
 const BIG = ['products.js'];
 self.addEventListener('install', (e) => {

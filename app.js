@@ -64,7 +64,7 @@ async function boot() {
 let saveWarned = false;
 let idbT;
 function save() { S.at = Date.now(); clearTimeout(idbT); idbT = setTimeout(() => IDB.set('state', S).catch(() => { }), 400); try { const o = Object.assign({}, S, { photos: {}, pp: [] }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { if (!saveWarned) { saveWarned = true; toast('Sauvegarde locale indisponible : pense à copier ta sauvegarde'); } } }
-const U = { tab: 'home', food: 'recipes', filters: [], fav: false, q: '', deck: 0, chat: [], run: null, pcat: 'all', psort: 'dens', pq: '', pn: 30, pporc: false };
+const U = { tab: 'home', food: 'recipes', filters: [], fav: false, q: '', deck: 0, chat: [], run: null, cat: 'all', area: 'Tunisian', eq: '', elist: null, pcat: 'all', psort: 'dens', pq: '', pn: 30, pporc: false };
 
 /* ============ SONS ============ */
 let AC;
@@ -124,6 +124,9 @@ function mealBudget() { const h = new Date().getHours(), left = h < 10 ? 3 : h <
 const weekNo = () => Math.floor(dayDiff(S.start, todayStr()) / 7) + 1;
 const cycleWeek = () => ((weekNo() - 1) % 12) + 1;
 const phaseOf = w => PHASES.find(p => w <= p.to);
+const weekStart = () => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return dstr(d); };
+const doneToday = () => S.hist.some(h => h.d === todayStr());
+function nextSid() { const done = new Set(S.hist.filter(h => h.d >= weekStart()).map(h => h.s)); return Object.keys(SESSIONS).find(k => !done.has(k)) || 'A'; }
 function sessionToday() { const d = new Date().getDay(); return Object.keys(SESSIONS).find(k => SESSIONS[k].day === d) || null; }
 const allItems = () => [...RECIPES.map(r => ({ ...r, kind: 'recipe' })), ...FAST.flatMap(c => c.items.map(i => ({ ...i, kind: 'fast', chain: c.chain })))];
 function findItem(id) { if (String(id).startsWith('off:')) { const pr = BYCODE && BYCODE.get(id.slice(4)); return pr ? prodItem(pr) : null; } return allItems().find(i => i.id === id); }
@@ -199,13 +202,30 @@ const animMount = r => { try { window.TF_ANIM && window.TF_ANIM.mount(r || docum
 /* ============ VISUELS ============ */
 const seedOf = id => { let h = 7; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 9973; return h + 1; };
 const artCache = {};
+const OFFIMG = (() => { try { return JSON.parse(localStorage.getItem('tf-offimg') || '{}'); } catch (e) { return {}; } })();
 function plate(it, cls = '') {
-  const ph = S.photos[it.id];
-  let inner_ = '';
+  const ph = S.photos[it.id], P = PHOTOS[it.id], off = String(it.id).startsWith('off:') ? it.id.slice(4) : '';
+  const key = it.id + (it.tone ? 'p' : '');
+  let inner_ = artCache[key] || (artCache[key] = it.tone ? pack(inner(it.t, seedOf(it.id), it.c, it.c2), seedOf(it.id), it.tone) : art(it.t, seedOf(it.id), it.c, it.c2));
   if (ph) inner_ = `<img src="${ph}" alt="${esc(it.name)}">`;
-  else { const key = it.id + (it.tone ? 'p' : ''); inner_ = artCache[key] || (artCache[key] = it.tone ? pack(inner(it.t, seedOf(it.id), it.c, it.c2), seedOf(it.id), it.tone) : art(it.t, seedOf(it.id), it.c, it.c2)); }
+  else if (P) inner_ += `<img class="rp" src="${P[0]}" alt="${esc(it.name)}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`;
+  else if (off && OFFIMG[off]) inner_ += `<img class="rp" src="${OFFIMG[off]}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`;
   const bg = it.bg ? `background:radial-gradient(circle at 30% 20%,${it.bg[1]},${it.bg[0]} 75%)` : `background:radial-gradient(circle at 30% 20%,${it.tone || it.col || '#2A3A32'},#0F1A14 80%)`;
-  return `<div class="plate ${cls}" style="${bg}">${inner_}</div>`;
+  return `<div class="plate ${cls}" style="${bg}"${off && OFFIMG[off] === undefined ? ` data-off="${off}"` : ''}>${inner_}</div>`;
+}
+/* Photos des produits : récupérées à la demande auprès d'Open Food Facts puis gardées */
+let offQ = 0, offT;
+function hydrateOff() {
+  clearTimeout(offT); offT = setTimeout(() => {
+    document.querySelectorAll('.plate[data-off]').forEach(el => {
+      const code = el.dataset.off; el.removeAttribute('data-off'); if (offQ > 5 || OFFIMG[code] !== undefined) return; offQ++;
+      fetch('https://world.openfoodfacts.org/api/v2/product/' + code + '?fields=image_front_small_url').then(r => r.json()).then(j => {
+        const u = j && j.product && j.product.image_front_small_url || ''; OFFIMG[code] = u;
+        try { localStorage.setItem('tf-offimg', JSON.stringify(OFFIMG)); } catch (e) { }
+        if (u && el.isConnected) { const im = document.createElement('img'); im.className = 'rp'; im.src = u; im.referrerPolicy = 'no-referrer'; im.onerror = () => im.remove(); el.appendChild(im); }
+      }).catch(() => { }).finally(() => { offQ--; });
+    });
+  }, 150);
 }
 function ring(vals) {
   const C = [326.7, 251.3, 175.9], R = [52, 40, 28], col = ['var(--lime)', 'var(--peach)', 'var(--aqua)'];
@@ -240,7 +260,7 @@ function afterRender() {
     const to = +el.dataset.count, t0 = performance.now(), dur = 900, dec = +el.dataset.dec || 0;
     const step = now => { const k = clamp((now - t0) / dur, 0, 1), e = 1 - Math.pow(1 - k, 3); el.textContent = fr(to * e, dec); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step);
   });
-  animMount($('#view')); if (U.tab === 'food' && U.food === 'recipes') bindDeck();
+  animMount($('#view')); hydrateOff(); if (U.tab === 'food' && U.food === 'recipes') bindDeck();
 }
 
 /* ============ VUE : AUJOURD'HUI ============ */
@@ -280,8 +300,10 @@ VIEWS.home = () => {
     ${sid ? `<div class="eyebrow">Séance du jour · semaine ${cycleWeek()} · ${ph.name}</div>
       <h2 class="h2" style="margin:6px 0 4px">${SESSIONS[sid].name}</h2><div class="mute small">${SESSIONS[sid].min} min · ${SESSIONS[sid].ex.length} exercices · ${ph.rpe}</div>
       <div class="row" style="margin-top:14px"><button class="btn grow" data-act="run" data-v="${sid}">${ico('play', 18)} Lancer la séance</button><button class="btn ghost" data-act="tab" data-v="sport">Détails</button></div>`
-      : `<div class="eyebrow">Jour de récupération</div><h2 class="h2" style="margin:6px 0 4px">Marche et mobilité</h2><div class="mute small">Vise 8 000 pas. Le muscle se construit pendant le repos.</div>
-      <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-act="tab" data-v="sport">Voir le programme</button></div>`}
+      : doneToday() ? `<div class="eyebrow">Séance terminée</div><h2 class="h2" style="margin:6px 0 4px">Bien joué</h2><div class="mute small">Mange bien, hydrate-toi, dors tôt. Le muscle se construit pendant la récupération.</div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost grow" data-act="tab" data-v="sport">Voir le programme</button></div>`
+      : `<div class="eyebrow">Jour de récupération conseillé</div><h2 class="h2" style="margin:6px 0 4px">Marche et mobilité</h2><div class="mute small">Le programme prévoit du repos aujourd'hui. Mais tu peux t'entraîner : la prochaine séance est « ${SESSIONS[nextSid()].name} ».</div>
+      <div class="row" style="margin-top:14px"><button class="btn grow" data-act="run" data-v="${nextSid()}">${ico('play', 18)} Faire la séance ${nextSid()}</button><button class="btn ghost" data-act="tab" data-v="sport">Programme</button></div>`}
   </section>
 
   <section class="col rise" style="--i:${i++}">
@@ -329,6 +351,7 @@ VIEWS.sport = () => {
   </section>
   ${Object.entries(SESSIONS).map(([k, s]) => `<section class="card glass rise col" style="--i:${i++}${k === sid ? ';background:linear-gradient(140deg,rgba(214,244,108,.2),rgba(255,255,255,.05))' : ''}">
     <div class="row between"><div><div class="eyebrow">Séance ${k}${k === sid ? ' · aujourd\'hui' : ''}</div><h2 class="h2" style="margin-top:4px">${s.name}</h2></div><span class="tag">${s.min} min</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${[0, Math.floor(s.ex.length / 2), s.ex.length - 1].map(n => `<div><div class="stage cover">${animSvg(s.ex[n], true)}</div><div class="small mute" style="text-align:center;margin-top:4px;line-height:1.2">${esc(EX[s.ex[n]].mus.split(',')[0])}</div></div>`).join('')}</div>
     <div class="col" style="gap:0">${s.ex.map((id, n) => `<div class="row between" style="padding:9px 0;border-top:1px solid var(--line);gap:10px"><div class="row grow" style="gap:12px"><div class="thumb">${animSvg(id, true)}</div><div><div style="font-weight:600;line-height:1.2">${esc(exLabel(id))}</div><div class="small mute">${EX[id].mus}</div></div></div><div class="small" style="text-align:right;color:var(--lime);font-weight:700">${exTarget(id)}</div></div>`).join('')}</div>
     <button class="btn block" data-act="run" data-v="${k}">${ico('play', 18)} Lancer la séance ${k}</button></section>`).join('')}
   <section class="card glass rise col" style="--i:${i++}"><h2 class="h2">Comment tu progresses</h2>
@@ -336,11 +359,11 @@ VIEWS.sport = () => {
   <section class="card glass rise col" style="--i:${i++}"><h2 class="h2">Dernières séances</h2>${S.hist.length ? S.hist.slice(-5).reverse().map(h => `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><div style="font-weight:600">${esc(h.old ? 'Séance (ancienne version)' : (SESSIONS[h.s] ? SESSIONS[h.s].name : 'Séance'))}</div><div class="small mute">${new Date(h.d + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · ${h.min} min</div></div><div class="num" style="color:var(--lime)">${fr(h.vol)} kg</div></div>`).join('') : '<div class="small mute">Aucune séance enregistrée. La première apparaîtra ici avec le volume soulevé.</div>'}</section>`;
 };
 /* ============ VUE : MANGER ============ */
-const SEGS = [['recipes', 'Recettes'], ['picard', 'Picard'], ['fast', 'Fast-food'], ['plan', 'Semaine']];
+const SEGS = [['recipes', 'Recettes'], ['explore', 'Explorer'], ['picard', 'Picard'], ['fast', 'Fast-food'], ['plan', 'Semaine']];
 const macroRow = it => `<div class="macro"><span><b>${it.k}</b> kcal</span><span><b>${it.p}</b> g prot.</span>${it.min ? `<span>${it.min} min</span>` : ''}</div>`;
 function filteredRecipes() {
-  const q = U.q.trim().toLowerCase();
-  return RECIPES.filter(r => (!U.fav || S.favs.includes(r.id)) && U.filters.every(f => r.tags.includes(f)) && (!q || r.name.toLowerCase().includes(q)));
+  const toks = norm(U.q || '').split(/\s+/).filter(Boolean);
+  return RECIPES.filter(r => (!U.fav || S.favs.includes(r.id)) && (U.cat === 'all' || toks.length || (r.cat || 'plat') === U.cat) && U.filters.every(f => r.tags.includes(f)) && toks.every(t => norm(r.name + ' ' + (r.cat || 'plat') + ' ' + r.tags.join(' ') + ' ' + r.ing.map(x => x[0]).join(' ')).includes(t)));
 }
 function deckHTML() {
   const pool = RECIPES.filter(r => !r.tags.includes('dessert') || true), n = pool.length, r = pool[U.deck % n], nx = pool[(U.deck + 1) % n];
@@ -400,15 +423,59 @@ function picardHTML() {
     <div class="scrollx">${PSORTS.map(c => `<button class="chip ${U.psort === c[0] ? 'on' : ''}" data-act="psort" data-v="${c[0]}">${c[1]}</button>`).join('')}<button class="chip ${U.pporc ? 'on' : ''}" data-act="pporc">Afficher le porc possible</button></div>
     <div class="small mute" id="pcount">${fr(n)} produit${n > 1 ? 's' : ''}</div><div id="plist" class="col">${plistHTML()}</div></section>`;
 }
+
+/* ============ EXPLORER : recettes de cuisiniers du monde (TheMealDB) ============ */
+const AREAS = [['Tunisian', 'Tunisien'], ['Moroccan', 'Marocain'], ['Turkish', 'Turc'], ['Egyptian', 'Égyptien'], ['Japanese', 'Japonais'], ['Indian', 'Indien'], ['Italian', 'Italien'], ['French', 'Français'], ['Greek', 'Grec'], ['Mexican', 'Mexicain'], ['Chinese', 'Chinois'], ['Thai', 'Thaï']];
+const MEAL = 'https://www.themealdb.com/api/json/v1/1/', MPORK = /pork|bacon|\bham\b|prosciutto|sausage|chorizo|pancetta|lard|salami|gammon|pepperoni|ribs|black pudding|guanciale/i;
+const mealCache = {};
+async function mj(u) { const r = await fetch(MEAL + u); if (!r.ok) throw new Error('http'); return r.json(); }
+let eT;
+async function exploreLoad() {
+  U.eload = true; U.eerr = false;
+  try { const j = U.eq ? await mj('search.php?s=' + encodeURIComponent(U.eq)) : await mj('filter.php?a=' + U.area); U.elist = (j.meals || []).filter(m => !MPORK.test(m.strMeal)); }
+  catch (e) { U.eerr = true; U.elist = []; }
+  U.eload = false; if (U.tab === 'food' && U.food === 'explore') { const g = $('#egrid'); if (g) g.innerHTML = exploreGrid(); else render(true); }
+}
+function exploreGrid() {
+  if (U.eload) return '<div class="mute card glass" style="grid-column:1/-1;text-align:center">Chargement des recettes…</div>';
+  if (U.eerr) return '<div class="mute card glass" style="grid-column:1/-1;text-align:center">Impossible de charger les recettes. Vérifie ta connexion.</div>';
+  if (!U.elist || !U.elist.length) return '<div class="mute card glass" style="grid-column:1/-1;text-align:center">Aucune recette trouvée. Essaie un mot en anglais (chicken, lamb, rice…).</div>';
+  return U.elist.map(m => `<button class="dish glass" data-act="meal" data-v="${m.idMeal}" style="align-items:stretch;text-align:left"><div class="plate" style="border-radius:26px;aspect-ratio:1.05;background:#1b2a22"><img class="rp" src="${m.strMealThumb}/preview" alt="${esc(m.strMeal)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"></div><div style="font-weight:700;line-height:1.2;font-size:15px;min-height:36px">${esc(m.strMeal)}</div></button>`).join('');
+}
+function exploreHTML() {
+  if (!U.elist && !U.eload) exploreLoad();
+  return `<section class="col rise"><div class="small mute" style="line-height:1.5">De vraies recettes de cuisiniers du monde entier, avec photos. Les plats au porc sont masqués. Les textes sont en anglais : un bouton les traduit.</div>
+    <label class="sr" for="eq">Chercher une recette</label><input id="eq" class="field" type="search" placeholder="Chercher : lamb, chicken, couscous…" value="${esc(U.eq)}" data-in="eq" autocomplete="off">
+    <div class="scrollx">${AREAS.map(([k, l]) => `<button class="chip ${!U.eq && U.area === k ? 'on' : ''}" data-act="area" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="grid2" id="egrid">${exploreGrid()}</div></section>`;
+}
+function mealHTML(m) {
+  const ing = []; for (let k = 1; k <= 20; k++) { const n = (m['strIngredient' + k] || '').trim(); if (n) ing.push([n, (m['strMeasure' + k] || '').trim()]); }
+  const pork = ing.some(x => MPORK.test(x[0])) || MPORK.test(m.strInstructions || '');
+  const steps = (m.strInstructions || '').split(/\r?\n+/).map(s => s.trim()).filter(s => s.length > 2);
+  const link = (u, l) => u ? `<a class="chip" href="${esc(u)}" target="_blank" rel="noopener">${l}</a>` : '';
+  return `<div class="row between"><div class="eyebrow">${esc(m.strArea || '')} · ${esc(m.strCategory || '')}</div><button class="ibtn glass" data-act="close" aria-label="Fermer">${ico('x')}</button></div>
+  <div style="margin:8px auto 0;max-width:340px"><div class="plate" style="border-radius:28px;aspect-ratio:1.2"><img class="rp" src="${m.strMealThumb}" alt="${esc(m.strMeal)}" referrerpolicy="no-referrer"></div></div>
+  <h2 class="h2" style="margin:12px 0 6px">${esc(m.strMeal)}</h2>
+  ${pork ? '<div class="card glass small" style="color:var(--peach);margin:6px 0">Cette recette contient du porc ou un dérivé. Remplace-le (dinde fumée, bœuf) ou passe ton chemin.</div>' : ''}
+  <div class="scrollx">${link(m.strSource, 'Recette d\'origine')}${link(m.strYoutube, 'Vidéo')}<a class="chip" href="https://translate.google.com/?sl=en&tl=fr&op=translate&text=${encodeURIComponent((ing.map(x => x[1] + ' ' + x[0]).join(', ') + '\n\n' + steps.join('\n')).slice(0, 4500))}" target="_blank" rel="noopener">Traduire en français</a></div>
+  <h3 style="font-size:19px;margin:16px 0 4px">Ingrédients</h3>${ing.map(([n, q]) => `<div class="row between" style="padding:7px 0;border-top:1px solid var(--line)"><span>${esc(n)}</span><span class="mute">${esc(q)}</span></div>`).join('')}
+  <h3 style="font-size:19px;margin:16px 0 4px">Préparation</h3>${steps.map((s, n) => `<p style="line-height:1.55;margin:8px 0"><b class="num" style="color:var(--lime)">${n + 1}.</b> ${esc(s.replace(/^(step\s*)?\d+[.):]?\s*/i, ''))}</p>`).join('')}
+  <div class="small mute" style="margin-top:14px">Recette partagée par la communauté TheMealDB. Valeurs nutritionnelles non fournies.</div>`;
+}
+
 VIEWS.food = () => {
   let i = 0, body = '';
   if (U.food === 'recipes') {
     const rs = filteredRecipes();
     body = `<section class="col rise" style="--i:${i++}">${deckHTML()}</section>
     <section class="col rise" style="--i:${i++}"><div class="row between"><h2 class="h2">Toutes les recettes</h2><span class="small mute">${rs.length} plat${rs.length > 1 ? 's' : ''} · sans porc</span></div>
-      <label class="sr" for="q">Rechercher une recette</label><input id="q" class="field" type="search" placeholder="Rechercher : poulet, burger, pâtes…" value="${esc(U.q)}" data-in="q" autocomplete="off">
+      <label class="sr" for="q">Rechercher une recette</label><input id="q" class="field" type="search" placeholder="Chercher : houmous, dessert, apéro, poulet…" value="${esc(U.q)}" data-in="q" autocomplete="off">
+      <div class="scrollx">${CATS.map(([k, l]) => `<button class="chip ${U.cat === k ? 'on' : ''}" data-act="cat" data-v="${k}">${l}</button>`).join('')}</div>
       <div class="scrollx"><button class="chip ${U.fav ? 'on' : ''}" data-act="favf">${ico('heart', 16)} Favoris</button>${TAGS.map(([k, l]) => `<button class="chip ${U.filters.includes(k) ? 'on' : ''}" data-act="filter" data-v="${k}">${l}</button>`).join('')}</div>
       <div class="grid2" id="rgrid">${rs.map(r => `<button class="dish glass" data-act="open" data-v="${r.id}" style="align-items:stretch;text-align:left">${plate(r)}<div style="font-weight:700;line-height:1.2;font-size:15px;min-height:36px">${esc(r.name)}</div>${macroRow(r)}</button>`).join('') || '<div class="mute card glass" style="grid-column:1/-1;text-align:center">Aucune recette ne coche tous ces critères. Retire un filtre.</div>'}</div></section>`;
+  } else if (U.food === 'explore') {
+    body = exploreHTML();
   } else if (U.food === 'picard') {
     body = picardHTML();
   } else if (U.food === 'fast') {
@@ -534,11 +601,13 @@ function sheetHTML() {
   const sc = x => Math.round(x * m);
   return `<div class="row between"><div class="eyebrow">${it.kind === 'fast' ? it.chain : it.kind === 'picard' ? 'Picard' : 'Recette'}</div><button class="ibtn glass" data-act="close" aria-label="Fermer">${ico('x')}</button></div>
   <div style="max-width:250px;margin:6px auto 0">${plate(it)}</div>
+  ${PHOTOS[it.id] && !S.photos[it.id] ? `<div class="small mute" style="text-align:center;margin-top:6px;font-size:11px">Photo : ${esc(PHOTOS[it.id][1])} · ${esc(PHOTOS[it.id][2])} · <a href="${PHOTOS[it.id][3]}" target="_blank" rel="noopener" style="color:inherit">Wikimedia Commons</a></div>` : ''}
   <div class="row" style="justify-content:center;margin:8px 0"><label class="btn ghost sm">${ico('cam', 16)} Ma photo de ce plat<input type="file" accept="image/*" data-file="food:${it.id}"></label></div>
   <h2 class="h2" style="margin:4px 0 8px">${esc(it.name)}</h2>
   <div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0">${[['kcal', sc(it.k), 'var(--lime)'], ['prot.', sc(it.p), 'var(--peach)'], ['gluc.', sc(it.g), 'var(--aqua)'], ['lip.', sc(it.l), 'var(--lilac)']].map(([l, v, c]) => `<div class="glass" style="border-radius:22px;padding:10px 6px;text-align:center"><div class="num" style="font-size:22px;color:${c}">${v}</div><div class="small mute">${l}</div></div>`).join('')}</div>
   <div class="row between" style="margin:8px 0"><div class="mute">Portion</div><div class="stepper"><button class="ibtn glass" data-act="mult" data-v="-.25" aria-label="Moins">${ico('minus')}</button><div class="v num" style="font-size:22px">× ${fr(m, 2)}</div><button class="ibtn glass" data-act="mult" data-v=".25" aria-label="Plus">${ico('plus')}</button></div></div>
   ${it.ing ? `<h3 style="font-size:19px;margin:16px 0 4px">Ingrédients</h3>${it.ing.map(([n, q, u]) => `<div class="row between" style="padding:7px 0;border-top:1px solid var(--line)"><span>${esc(n)}</span><span class="mute">${fq(q, m)} ${u}</span></div>`).join('')}<h3 style="font-size:19px;margin:16px 0 4px">Préparation · ${it.min} min</h3><ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px">${it.steps.map(s => `<li style="line-height:1.45">${esc(s)}</li>`).join('')}</ol>` : `<div class="small mute">${it.q || ''}${it.porc ? ' · contient du porc' : ''}</div>`}
+  ${it.kind === 'recipe' ? `<h3 style="font-size:19px;margin:16px 0 6px">D'autres versions en ligne</h3><div class="scrollx">${[['Marmiton', 'https://www.marmiton.org/recettes/recherche.aspx?aqt='], ['750g', 'https://www.750g.com/recherche.htm?search='], ['YouTube', 'https://www.youtube.com/results?search_query=recette+']].map(([l, u]) => `<a class="chip" href="${u}${encodeURIComponent(it.name)}" target="_blank" rel="noopener">${l}</a>`).join('')}</div>` : ''}
   <div class="scrollx" style="margin-top:16px">${SLOTS.map(([k, l]) => `<button class="chip ${slot === k ? 'on' : ''}" data-act="slotpick" data-v="${k}">${l}</button>`).join('')}</div>
   <div class="row" style="gap:10px;margin-top:12px"><button class="btn grow" data-act="logsheet">${ico('plus', 18)} Ajouter au journal</button><button class="ibtn glass" style="width:52px;height:52px;border-radius:26px;${S.favs.includes(id) ? 'color:var(--lime)' : ''}" data-act="fav" data-v="${id}" aria-label="${S.favs.includes(id) ? 'Retirer des favoris' : 'Mettre en favori'}">${ico('heart')}</button></div>`;
 }
@@ -673,6 +742,9 @@ const ACT = {
   seg: a => { U.food = a.dataset.v; SND.tap(); render(); },
   filter: a => { const v = a.dataset.v, k = U.filters.indexOf(v); k >= 0 ? U.filters.splice(k, 1) : U.filters.push(v); SND.tap(); render(true); },
   favf: () => { U.fav = !U.fav; SND.tap(); render(true); },
+  area: a => { U.area = a.dataset.v; U.eq = ''; U.elist = null; U.eload = false; SND.tap(); render(true); },
+  meal: async a => { SND.tap(); const id = a.dataset.v; try { const m = mealCache[id] || (mealCache[id] = (await mj('lookup.php?i=' + id)).meals[0]); U.sh = { meal: true }; openSheet(mealHTML(m)); } catch (e) { toast('Recette indisponible hors ligne'); } },
+  cat: a => { U.cat = a.dataset.v; SND.tap(); render(true); },
   pcat: a => { U.pcat = a.dataset.v; U.pn = 30; SND.tap(); render(true); }, psort: a => { U.psort = a.dataset.v; U.pn = 30; SND.tap(); render(true); }, pporc: () => { U.pporc = !U.pporc; U.pn = 30; SND.tap(); render(true); }, pmore: () => { U.pn = (U.pn || 30) + 30; SND.tap(); const l = $('#plist'); if (l) l.innerHTML = plistHTML(); },
   deck: a => deckFly(a.dataset.v === 'keep' ? 1 : -1),
   plan: () => { genPlan(); SND.pop(); toast('Semaine composée'); render(true); },
@@ -698,6 +770,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.in === 'q') { U.q = t.value; const g = $('#rgrid'); if (g) { const rs = filteredRecipes(); g.innerHTML = rs.map(r => `<button class="dish glass" data-act="open" data-v="${r.id}" style="align-items:stretch;text-align:left">${plate(r)}<div style="font-weight:700;line-height:1.2;font-size:15px;min-height:36px">${esc(r.name)}</div>${macroRow(r)}</button>`).join('') || '<div class="mute card glass" style="grid-column:1/-1;text-align:center">Aucune recette trouvée.</div>'; } }
+  if (t.dataset.in === 'eq') { U.eq = t.value.trim(); clearTimeout(eT); eT = setTimeout(() => { U.elist = null; U.eload = true; const g = $('#egrid'); if (g) g.innerHTML = exploreGrid(); exploreLoad(); }, 450); }
   if (t.dataset.in === 'pq') { U.pq = t.value; U.pn = 30; const l = $('#plist'); if (l) { l.innerHTML = plistHTML(); $('#pcount').textContent = fr(picardFiltered().length) + ' produits'; } }
   if (t.dataset.in === 'aq') $('#ares').innerHTML = addResults(t.value);
 });

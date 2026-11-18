@@ -11,7 +11,7 @@ const fr = (n, d = 0) => Number(n).toLocaleString('fr-FR', { minimumFractionDigi
 
 function defState() {
   const t = todayStr();
-  return { start: t, weights: [{ d: t, w: 95 }], waist: [], log: { [t]: [{ n: 'Porridge protéiné à la banane', k: 430, p: 30, g: 58, l: 9, slot: 'pdj', id: 'r14' }] }, steps: { [t]: 3200 }, cig: {}, cigBase: 10, prog: {}, hist: [], favs: [], photos: {}, pp: [], plan: null, checked: {}, sound: true, height: 176, age: 25, goalW: 80, goalD: '2027-06-21', energy: 'mid' };
+  return { start: t, weights: [{ d: t, w: 95 }], waist: [], log: { [t]: [{ n: 'Porridge protéiné à la banane', k: 430, p: 30, g: 58, l: 9, slot: 'pdj', id: 'r14' }] }, steps: { [t]: 3200 }, cig: {}, cigBase: 12, prog: {}, hist: [], favs: [], photos: {}, pp: [], plan: null, checked: {}, sound: true, height: 176, age: 25, goalW: 80, goalD: '2027-06-21', energy: 'mid' };
 }
 let S = defState(), hasLocal = false;
 try { const r = localStorage.getItem(KEY); if (r) { S = Object.assign(defState(), JSON.parse(r)); hasLocal = true; } } catch (e) { }
@@ -57,6 +57,7 @@ async function boot() {
     else if (!hasLocal && !st) { const old = await readOld(); if (old) { S = old; migrated = true; save(); } }
   } catch (e) { }
   render();
+  if (!migrated && S.weights.length > 2 && Date.now() - (S.lastBackup || 0) > 7 * 864e5) setTimeout(() => toast('Pense à télécharger ta sauvegarde (Réglages)'), 2500);
   if (migrated) setTimeout(() => toast('Tes données de l\'ancienne version ont été reprises'), 900);
   (window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => loadProducts().catch(() => { }));
 }
@@ -101,10 +102,20 @@ const ico = (n, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" 
 
 /* ============ CALCULS ============ */
 const lastW = () => [...S.weights].sort((a, b) => a.d < b.d ? -1 : 1).slice(-1)[0].w;
+/* Ajustement hebdomadaire : vise environ 0,6 kg perdu par semaine (tendance sur 21 jours) */
+function trendAdj() {
+  const W = S.weights.filter(x => dayDiff(x.d, todayStr()) <= 21);
+  if (W.length < 3 || dayDiff(S.start, todayStr()) < 14) return { adj: 0, rate: null };
+  const t0 = W[0].d, xs = W.map(x => dayDiff(t0, x.d)), ys = W.map(x => x.w), n = W.length, mx = xs.reduce((s, v) => s + v, 0) / n, my = ys.reduce((s, v) => s + v, 0) / n;
+  const den = xs.reduce((s, v) => s + (v - mx) ** 2, 0); if (!den || Math.max(...xs) < 10) return { adj: 0, rate: null };
+  const rate = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0) / den * 7;
+  const adj = rate > -0.3 ? -100 : rate < -1 ? 100 : 0;
+  return { adj: adj * Math.min(3, 1 + Math.floor(Math.max(0, (rate > -0.3 ? -0.3 - rate : rate < -1 ? -1 - rate : 0)) / 0.3)), rate };
+}
 function tgt() {
-  const w = lastW(), bmr = 10 * w + 6.25 * S.height - 5 * S.age + 5, tdee = bmr * 1.4;
-  const k = Math.round((tdee - 500) / 10) * 10, p = Math.round(w * 1.8 / 5) * 5, l = Math.round(w * .8 / 5) * 5, g = Math.max(80, Math.round((k - p * 4 - l * 9) / 20) * 5);
-  return { k, p, g, l, tdee: Math.round(tdee), bmr: Math.round(bmr) };
+  const w = lastW(), bmr = 10 * w + 6.25 * S.height - 5 * S.age + 5, tdee = bmr * 1.4, ta = trendAdj();
+  const k = Math.round((tdee - 500 + ta.adj) / 10) * 10, p = Math.round(w * 1.8 / 5) * 5, l = Math.round(w * .8 / 5) * 5, g = Math.max(80, Math.round((k - p * 4 - l * 9) / 20) * 5);
+  return { k, p, g, l, tdee: Math.round(tdee), bmr: Math.round(bmr), adj: ta.adj, rate: ta.rate };
 }
 function totals(date = todayStr()) { return (S.log[date] || []).reduce((o, e) => ({ k: o.k + e.k, p: o.p + e.p, g: o.g + e.g, l: o.l + e.l }), { k: 0, p: 0, g: 0, l: 0 }); }
 const SLOTS = [['pdj', 'Petit-déjeuner'], ['dej', 'Déjeuner'], ['col', 'Collation'], ['din', 'Dîner']];
@@ -554,11 +565,10 @@ function addResults(q) {
 function settingsHTML() {
   const T = tgt();
   return `<div class="row between"><h2 class="h2">Réglages</h2><button class="ibtn glass" data-act="close" aria-label="Fermer">${ico('x')}</button></div>
-  <div class="card glass col" style="margin:10px 0"><div class="eyebrow">Tes objectifs du jour</div><div class="small mute" style="line-height:1.5">Métabolisme de base ${fr(T.bmr)} kcal, dépense estimée ${fr(T.tdee)} kcal avec ton niveau d'activité. Objectif : déficit de 500 kcal, soit environ 0,5 kg perdu par semaine, avec ${T.p} g de protéines (1,8 g par kilo) pour garder le muscle.</div><div class="num" style="font-size:26px">${fr(T.k)} kcal · ${T.p} P · ${T.g} G · ${T.l} L</div></div>
+  <div class="card glass col" style="margin:10px 0"><div class="eyebrow">Tes objectifs du jour</div>${T.rate !== null ? `<div class="small" style="line-height:1.5">Tendance : ${f1(T.rate)} kg par semaine. ${T.adj < 0 ? "Objectif baissé de " + (-T.adj) + " kcal pour relancer la perte." : T.adj > 0 ? "Objectif relevé de " + T.adj + " kcal : tu perds trop vite." : "Tu es dans la bonne zone."}</div>` : ""}<div class="small mute" style="line-height:1.5">Métabolisme de base ${fr(T.bmr)} kcal, dépense estimée ${fr(T.tdee)} kcal avec ton niveau d'activité. Objectif : déficit de 500 kcal, soit environ 0,5 kg perdu par semaine, avec ${T.p} g de protéines (1,8 g par kilo) pour garder le muscle.</div><div class="num" style="font-size:26px">${fr(T.k)} kcal · ${T.p} P · ${T.g} G · ${T.l} L</div></div>
   <div class="grid2" style="gap:10px">${[['height', 'Taille (cm)', S.height], ['age', 'Âge', S.age], ['goalW', 'Poids visé (kg)', S.goalW], ['cigBase', 'Cigarettes par jour au départ', S.cigBase]].map(([k, l, v]) => `<div><label class="small mute" for="s_${k}">${l}</label><input id="s_${k}" class="field" inputmode="numeric" value="${v}" data-set="${k}"></div>`).join('')}</div>
-  <h3 style="font-size:19px;margin:18px 0 6px">Sauvegarde</h3><div class="small mute" style="margin-bottom:8px;line-height:1.5">Tes données sont gardées dans ce navigateur. Copie cette sauvegarde de temps en temps, et colle-la pour restaurer.</div>
-  <textarea id="exp" class="field" style="height:90px;padding:12px 16px;border-radius:22px;resize:none;font-size:12px" aria-label="Sauvegarde">${esc(JSON.stringify({ ...S, photos: {}, pp: [] }))}</textarea>
-  <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost grow" data-act="copyexp">${ico('copy', 16)} Copier</button><button class="btn ghost grow" data-act="impexp">Restaurer</button></div>
+  <h3 style="font-size:19px;margin:18px 0 6px">Sauvegarde</h3><div class="small mute" style="margin-bottom:8px;line-height:1.5">Tes données sont gardées sur cet appareil. Télécharge un fichier de sauvegarde chaque semaine (photos comprises) et garde-le dans Fichiers ou iCloud. Dernière sauvegarde : ${S.lastBackup ? new Date(S.lastBackup).toLocaleDateString('fr-FR') : 'jamais'}.</div>
+  <div class="row" style="gap:8px"><button class="btn grow" data-act="dlbackup">${ico('copy', 16)} Télécharger</button><label class="btn ghost grow" style="justify-content:center">Restaurer un fichier<input type="file" accept=".json,application/json" data-file="restore" hidden></label></div>
   <button class="btn ghost block" style="margin-top:14px;color:var(--peach)" data-act="reset">Tout effacer et recommencer</button>`;
 }
 function shopOpen() { U.sh = { shop: true }; openSheet(shopSheet()); }
@@ -678,8 +688,7 @@ const ACT = {
   rskip: () => { stopTimer(); SND.go(); afterRest(); },
   runquit: () => { if (R.quit) { stopTimer(); R = null; $('#runner').hidden = true; toast('Séance non enregistrée'); } else { R.quit = true; runRender(); setTimeout(() => { if (R) { R.quit = false; if (R.phase !== 'rest' && R.phase !== 'timer' && R.phase !== 'done') runRender(); } }, 2500); } },
   rend: () => { R = null; $('#runner').hidden = true; U.tab = 'track'; render(); },
-  copyexp: () => { const t = $('#exp'); t.select(); try { navigator.clipboard.writeText(t.value).then(() => toast('Sauvegarde copiée'), () => toast('Copie refusée : sélectionne le texte à la main')); } catch (e) { toast('Copie refusée : sélectionne le texte à la main'); } },
-  impexp: () => { try { const o = JSON.parse($('#exp').value); S = Object.assign(defState(), o, { photos: S.photos, pp: S.pp }); save(); closeSheet(); render(); toast('Sauvegarde restaurée'); } catch (e) { toast('Texte de sauvegarde invalide'); } },
+  dlbackup: () => { S.lastBackup = Date.now(); save(); const blob = new Blob([JSON.stringify(S)], { type: 'application/json' }), u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = 'transformation-' + dstr(new Date()) + '.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); toast('Sauvegarde téléchargée'); },
   reset: () => { if (!ACT._r) { ACT._r = 1; toast('Appuie encore pour tout effacer'); setTimeout(() => ACT._r = 0, 3000); return; } try { localStorage.removeItem(KEY); } catch (e) { } S = defState(); closeSheet(); render(); }
 };
 document.addEventListener('click', e => {
@@ -695,6 +704,10 @@ document.addEventListener('input', e => {
 document.addEventListener('change', async e => {
   const t = e.target;
   if (t.dataset.set) { const v = parseFloat(String(t.value).replace(',', '.')); if (v > 0) { S[t.dataset.set] = v; save(); toast('Réglage enregistré'); render(true); } }
+  if (t.dataset.file === 'restore' && t.files[0]) {
+    try { const o = JSON.parse(await t.files[0].text()); if (!o || !o.weights || !o.start) throw 0; S = Object.assign(defState(), o); save(); closeSheet(); render(); toast('Sauvegarde restaurée'); } catch (err) { toast('Fichier de sauvegarde invalide'); }
+    return;
+  }
   if (t.dataset.file === 'scan' && t.files[0]) {
     toast('Lecture du code-barres…');
     try { const [code] = await Promise.all([decodeBarcode(t.files[0]), loadProducts()]); if (!code) return toast('Code illisible : rapproche-toi, ou tape les chiffres'); const pr = findCode(code); if (!pr) return toast('Produit inconnu (' + code + '). Utilise l\'ajout rapide.'); closeSheet(); openItem('off:' + pr.code); } catch (err) { toast('Lecture impossible. Tape les chiffres du code-barres.'); }

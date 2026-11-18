@@ -64,7 +64,7 @@ async function boot() {
 let saveWarned = false;
 let idbT;
 function save() { S.at = Date.now(); clearTimeout(idbT); idbT = setTimeout(() => IDB.set('state', S).catch(() => { }), 400); try { const o = Object.assign({}, S, { photos: {}, pp: [] }); localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { if (!saveWarned) { saveWarned = true; toast('Sauvegarde locale indisponible : pense à copier ta sauvegarde'); } } }
-const U = { tab: 'home', food: 'recipes', filters: [], fav: false, q: '', deck: 0, chat: [], run: null, cat: 'all', area: 'Tunisian', eq: '', elist: null, pcat: 'all', psort: 'dens', pq: '', pn: 30, pporc: false };
+const U = { tab: 'home', food: 'wiz', wiz: { step: 0, a: {}, done: false, n: 24 }, filters: [], fav: false, q: '', deck: 0, chat: [], run: null, cat: 'all', area: 'Tunisian', eq: '', elist: null, pcat: 'all', psort: 'dens', pq: '', pn: 30, pporc: false };
 
 /* ============ SONS ============ */
 let AC;
@@ -294,6 +294,7 @@ VIEWS.home = () => {
     <div class="eyebrow">Ta meilleure décision maintenant</div>
     <h2 class="h2" style="margin:6px 0 12px">${slotNow() === 'col' ? 'Une collation qui tient' : 'Il te reste ' + fr(left) + ' kcal et ' + pl + ' g de protéines'}</h2>
     <div class="grid2">${best.map(r => `<div class="col" style="gap:8px"><button class="dish glass" data-act="open" data-v="${r.id}" style="padding:10px">${plate(r)}<div style="font-weight:700;line-height:1.2;font-size:15px">${esc(r.name)}</div><div class="macro"><span><b>${r.k}</b> kcal</span><span><b>${r.p}</b> g</span></div></button><button class="btn sm" data-act="log" data-v="${r.id}">${ico('plus', 16)} Ajouter</button></div>`).join('')}</div>
+    <button class="btn block" style="margin-top:12px" data-act="wiz">${ico('spark', 18)} Qu'est-ce qu'on mange ?</button>
   </section>
 
   <section class="card glass rise" style="--i:${i++};background:linear-gradient(140deg,rgba(214,244,108,.22),rgba(98,227,207,.08))">
@@ -359,7 +360,7 @@ VIEWS.sport = () => {
   <section class="card glass rise col" style="--i:${i++}"><h2 class="h2">Dernières séances</h2>${S.hist.length ? S.hist.slice(-5).reverse().map(h => `<div class="row between" style="padding:8px 0;border-top:1px solid var(--line)"><div><div style="font-weight:600">${esc(h.old ? 'Séance (ancienne version)' : (SESSIONS[h.s] ? SESSIONS[h.s].name : 'Séance'))}</div><div class="small mute">${new Date(h.d + 'T12:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · ${h.min} min</div></div><div class="num" style="color:var(--lime)">${fr(h.vol)} kg</div></div>`).join('') : '<div class="small mute">Aucune séance enregistrée. La première apparaîtra ici avec le volume soulevé.</div>'}</section>`;
 };
 /* ============ VUE : MANGER ============ */
-const SEGS = [['recipes', 'Recettes'], ['explore', 'Explorer'], ['picard', 'Picard'], ['fast', 'Fast-food'], ['plan', 'Semaine']];
+const SEGS = [['wiz', 'Que manger ?'], ['recipes', 'Recettes'], ['explore', 'Explorer'], ['picard', 'Picard'], ['fast', 'Fast-food'], ['plan', 'Semaine']];
 const macroRow = it => `<div class="macro"><span><b>${it.k}</b> kcal</span><span><b>${it.p}</b> g prot.</span>${it.min ? `<span>${it.min} min</span>` : ''}</div>`;
 function filteredRecipes() {
   const toks = norm(U.q || '').split(/\s+/).filter(Boolean);
@@ -464,9 +465,49 @@ function mealHTML(m) {
   <div class="small mute" style="margin-top:14px">Recette partagée par la communauté TheMealDB. Valeurs nutritionnelles non fournies.</div>`;
 }
 
+
+/* ============ QU'EST-CE QU'ON MANGE ? ============ */
+const WQ = [
+  { k: 'moment', q: 'Tu cherches quoi ?', o: [['plat', 'Un repas complet'], ['sandwich', 'Un sandwich'], ['pdj', 'Un petit-déj'], ['snack', 'Un truc à grignoter'], ['apéro', 'Un apéro'], ['entrée', 'Une entrée'], ['dessert', 'Un dessert']] },
+  { k: 'faim', q: 'Tu as quelle faim ?', o: [['leger', 'Un petit creux'], ['normal', 'Une faim normale'], ['gros', 'Très faim']] },
+  { k: 'temp', q: 'Chaud ou froid ?', o: [['chaud', 'Chaud'], ['froid', 'Froid']] },
+  { k: 'main', q: 'Plutôt…', o: [['viande', 'Viande'], ['poisson', 'Poisson'], ['vege', 'Végé']] },
+  { k: 'cuis', q: 'Quelle envie de cuisine ?', o: [['tunisien', 'Tunisien'], ['libanais', 'Libanais'], ['japonais', 'Japonais'], ['indien', 'Indien'], ['italien', 'Italien']] },
+  { k: 'temps', q: 'Tu as combien de temps ?', o: [['15', '15 min max'], ['30', '30 min max'], ['45', '45 min max']] },
+  { k: 'style', q: 'Ton humeur ?', o: [['proteine', 'Protéiné'], ['gourmand', 'Gourmand'], ['epice', 'Épicé'], ['fromage', 'Fromage'], ['leger', 'Léger']] }
+];
+function wizMatch(a) {
+  return RECIPES.filter(r => (!a.moment || (r.cat || 'plat') === a.moment) && (!a.faim || (a.faim === 'leger' ? r.k <= 480 : a.faim === 'gros' ? r.k >= 650 : r.k >= 380 && r.k <= 820))
+    && (!a.temp || r.tags.includes(a.temp)) && (!a.main || r.main === a.main) && (!a.cuis || r.tags.includes(a.cuis)) && (!a.temps || r.min <= +a.temps) && (!a.style || r.tags.includes(a.style)));
+}
+function wizSorted(a) {
+  const m = wizMatch(a), big = !a.moment || a.moment === 'plat' || a.moment === 'sandwich', tgtK = mealBudget();
+  return m.slice().sort((x, y) => big ? Math.abs(x.k - tgtK) - Math.abs(y.k - tgtK) : (y.p / y.k) - (x.p / x.k));
+}
+const wizLabel = (k, v) => { const q = WQ.find(x => x.k === k); const o = q && q.o.find(x => x[0] === v); return o ? o[1] : v; };
+function wizHTML() {
+  const w = U.wiz, n = wizMatch(w.a).length, ans = Object.entries(w.a).filter(([, v]) => v);
+  const sum = ans.length ? `<div class="scrollx">${ans.map(([k, v]) => `<button class="chip on" data-act="wizrm" data-v="${k}" aria-label="Retirer ${esc(wizLabel(k, v))}">${esc(wizLabel(k, v))} ${ico('x', 14)}</button>`).join('')}</div>` : '';
+  if (w.done) {
+    const l = wizSorted(w.a);
+    return `<section class="col rise"><div class="row between"><h2 class="h2">${l.length} idée${l.length > 1 ? 's' : ''} pour toi</h2><button class="btn ghost sm" data-act="wizreset">Recommencer</button></div>${sum}
+      ${l.length ? `<button class="btn block" data-act="wizrand">${ico('spark', 18)} Surprends-moi</button>` : '<div class="card glass mute" style="text-align:center">Aucune recette ne coche tous ces critères. Retire-en un en touchant une puce ci-dessus.</div>'}
+      <div class="col">${l.slice(0, w.n).map(r => `<button class="card glass row" data-act="open" data-v="${r.id}" style="gap:14px;padding:12px;text-align:left;align-items:center"><div style="width:92px;flex:none">${plate(r)}</div><div class="grow"><div style="font-weight:700;line-height:1.2">${esc(r.name)}</div><div style="margin-top:6px">${macroRow(r)}</div></div></button>`).join('')}
+      ${l.length > w.n ? `<button class="btn ghost block" data-act="wizmore">Afficher plus (${l.length - w.n})</button>` : ''}</div></section>`;
+  }
+  const q = WQ[w.step];
+  return `<section class="col rise"><div class="card glass halo col"><div class="row between"><div class="eyebrow">Question ${w.step + 1} sur ${WQ.length}</div><div class="small mute">${n} recette${n > 1 ? 's' : ''} possible${n > 1 ? 's' : ''}</div></div>
+    <div style="display:flex;gap:4px">${WQ.map((_, i) => `<i style="flex:1;height:5px;border-radius:3px;background:${i < w.step ? 'var(--lime)' : i === w.step ? 'var(--aqua)' : 'rgba(255,255,255,.14)'}"></i>`).join('')}</div>
+    <h2 class="h2" style="font-size:28px;margin:8px 0">${q.q}</h2>
+    <div class="col" style="gap:8px">${q.o.map(([v, l]) => `<button class="btn ghost block" style="justify-content:flex-start;padding:0 20px" data-act="wizans" data-k="${q.k}" data-v="${v}">${esc(l)}</button>`).join('')}<button class="btn ghost block" style="opacity:.7" data-act="wizans" data-k="${q.k}" data-v="">Peu importe</button></div></div>
+    ${sum}<div class="row" style="gap:8px">${w.step ? '<button class="btn ghost" data-act="wizback">Retour</button>' : ''}<button class="btn grow" data-act="wizshow">Voir les ${n} recettes</button></div></section>`;
+}
+
 VIEWS.food = () => {
   let i = 0, body = '';
-  if (U.food === 'recipes') {
+  if (U.food === 'wiz') {
+    body = wizHTML();
+  } else if (U.food === 'recipes') {
     const rs = filteredRecipes();
     body = `<section class="col rise" style="--i:${i++}">${deckHTML()}</section>
     <section class="col rise" style="--i:${i++}"><div class="row between"><h2 class="h2">Toutes les recettes</h2><span class="small mute">${rs.length} plat${rs.length > 1 ? 's' : ''} · sans porc</span></div>
@@ -742,6 +783,14 @@ const ACT = {
   seg: a => { U.food = a.dataset.v; SND.tap(); render(); },
   filter: a => { const v = a.dataset.v, k = U.filters.indexOf(v); k >= 0 ? U.filters.splice(k, 1) : U.filters.push(v); SND.tap(); render(true); },
   favf: () => { U.fav = !U.fav; SND.tap(); render(true); },
+  wizans: a => { const w = U.wiz, k = a.dataset.k; if (a.dataset.v) w.a[k] = a.dataset.v; else delete w.a[k]; SND.tap(); w.step++; if (w.step >= WQ.length || wizMatch(w.a).length <= 8) { w.done = true; w.n = 24; } render(true); },
+  wizback: () => { U.wiz.step = Math.max(0, U.wiz.step - 1); SND.tap(); render(true); },
+  wizshow: () => { U.wiz.done = true; U.wiz.n = 24; SND.tap(); render(true); },
+  wizmore: () => { U.wiz.n += 24; SND.tap(); render(true); },
+  wizreset: () => { U.wiz = { step: 0, a: {}, done: false, n: 24 }; SND.tap(); render(true); },
+  wizrm: a => { delete U.wiz.a[a.dataset.v]; SND.tap(); render(true); },
+  wizrand: () => { const l = wizSorted(U.wiz.a); if (l.length) { SND.tap(); openItem(l[Math.floor(Math.random() * l.length)].id); } },
+  wiz: () => { U.tab = 'food'; U.food = 'wiz'; U.wiz = { step: 0, a: {}, done: false, n: 24 }; SND.tap(); render(); },
   area: a => { U.area = a.dataset.v; U.eq = ''; U.elist = null; U.eload = false; SND.tap(); render(true); },
   meal: async a => { SND.tap(); const id = a.dataset.v; try { const m = mealCache[id] || (mealCache[id] = (await mj('lookup.php?i=' + id)).meals[0]); U.sh = { meal: true }; openSheet(mealHTML(m)); } catch (e) { toast('Recette indisponible hors ligne'); } },
   cat: a => { U.cat = a.dataset.v; SND.tap(); render(true); },

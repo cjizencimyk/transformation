@@ -1,124 +1,179 @@
-// Programme Transformation : exercices, séances, poids de départ.
-// kind : pair (2 haltères), single (1 haltère), level (poids du corps par niveaux), time (secondes), cardio (minutes)
-window.FORGE_DATA = (function () {
-  const EX = {
-    pompes: { name: 'Pompes', muscle: 'Pecs, triceps', kind: 'level', sets: 4, min: 8, max: 20, amrap: true,
-      levels: ['Mains sur le lit', 'Au sol', 'Pieds sur le lit', 'Pompes diamant', 'Pompes archer'],
-      anim: 'pushup', cue: 'Corps gainé de la tête aux pieds. La poitrine frôle le sol, puis tu pousses fort.' },
-    row1: { name: 'Rowing un bras', muscle: 'Dos', kind: 'single', uni: true, sets: 4, min: 8, max: 15, amrap: true,
-      anim: 'row1', cue: 'Une main sur la chaise. Tire le coude vers la hanche, pas vers le plafond.' },
-    floorpress: { name: 'Développé couché au sol', muscle: 'Pecs, triceps', kind: 'pair', sets: 4, min: 10, max: 20, amrap: true,
-      anim: 'floorpress', cue: 'Coudes à 45° du corps. Ils touchent le sol, puis tu pousses.' },
-    lateral: { name: 'Élévations latérales', muscle: 'Épaules', kind: 'pair', sets: 4, min: 12, max: 25,
-      anim: 'lateral', cue: 'Léger. Monte jusqu’à la hauteur des épaules, pas plus haut.' },
-    ohp: { name: 'Développé épaules assis', muscle: 'Épaules, triceps', kind: 'pair', sets: 4, min: 8, max: 15, amrap: true,
-      anim: 'ohp', cue: 'Dos contre le dossier de la chaise, ne cambre pas.' },
-    dips: { name: 'Dips sur chaise', muscle: 'Triceps, pecs', kind: 'level', sets: 3, min: 8, max: 20,
-      levels: ['Genoux pliés', 'Jambes tendues', 'Pieds surélevés', 'Pieds surélevés, sac à dos lesté'],
-      anim: 'dips', cue: 'Mains au bord de la chaise. Ne descends pas plus bas que les coudes à 90°.' },
-    triceps: { name: 'Extensions triceps', long: 'Extensions triceps au-dessus de la tête', muscle: 'Triceps', kind: 'single', sets: 3, min: 10, max: 20,
-      anim: 'triceps', cue: 'Un haltère tenu à deux mains. Les coudes restent pointés vers le plafond.' },
-    lunge: { name: 'Fentes arrière', muscle: 'Cuisses, fessiers', kind: 'pair', bw: true, uni: true, sets: 4, min: 8, max: 15, amrap: true,
-      anim: 'lunge', cue: 'Le genou arrière frôle le sol. C’est l’exercice principal : mets le plus lourd ici.' },
-    plank: { name: 'Planche', muscle: 'Abdos', kind: 'time', sets: 3, min: 40, max: 90, step: 5,
-      anim: 'plank', cue: 'Corps droit, hanches ni trop hautes ni trop basses. Respire.' },
-    rdl: { name: 'Soulevé de terre jambes tendues', muscle: 'Ischios, fessiers', kind: 'pair', sets: 4, min: 10, max: 20, amrap: true,
-      anim: 'rdl', cue: 'Genoux légèrement fléchis, dos plat. Recule les fesses. Descente en 3 s.' },
-    goblet: { name: 'Goblet squat', muscle: 'Cuisses', kind: 'single', sets: 4, min: 10, max: 20, amrap: true,
-      anim: 'goblet', cue: 'Haltère contre la poitrine. Descends sous la parallèle, talons au sol.' },
-    bridge: { name: 'Pont fessier', muscle: 'Fessiers', kind: 'single', sets: 3, min: 12, max: 25,
-      anim: 'bridge', cue: 'Haltère posé sur les hanches. Serre les fessiers 2 s en haut.' },
-    rower: { name: 'Rameur', muscle: 'Cardio', kind: 'cardio', sets: 1, minutes: 10,
-      anim: 'rower', cue: 'Rythme tranquille : tu dois pouvoir parler en ramant.' },
-    pullup: { name: 'Tractions assistées', muscle: 'Dos, biceps', kind: 'level', sets: 4, min: 5, max: 10, amrap: true,
-      levels: ['Élastique sous le pied', 'Élastique sous le genou', 'Sans élastique', 'Lestées, sac à dos'],
-      anim: 'pullup', cue: 'Élastique accroché à la barre, sous le pied (plus d’aide) ou le genou. Après la dernière série : 3 négatives, tu montes avec une chaise et tu descends en 5 s.' },
-    bentrow: { name: 'Rowing buste penché', muscle: 'Dos', kind: 'pair', sets: 4, min: 10, max: 20, amrap: true,
-      anim: 'bentrow', cue: 'Buste à 45°, dos plat. Tire vers le nombril, descente en 3 s.' },
-    reardelt: { name: 'Oiseau', muscle: 'Arrière d’épaule', kind: 'pair', sets: 3, min: 12, max: 25,
-      anim: 'reardelt', cue: 'Léger. Buste penché, les bras s’ouvrent comme des ailes.' },
-    curl: { name: 'Curl biceps', muscle: 'Biceps', kind: 'pair', sets: 3, min: 10, max: 20,
-      anim: 'curl', cue: 'Coudes collés au corps, descente lente.' },
-    hammer: { name: 'Curl marteau', muscle: 'Biceps, avant-bras', kind: 'pair', sets: 3, min: 10, max: 20,
-      anim: 'curl', cue: 'Pouces vers le haut, comme si tu tenais un marteau.' },
-    bulgarian: { name: 'Squat bulgare', muscle: 'Cuisses, fessiers', kind: 'pair', bw: true, uni: true, sets: 4, min: 8, max: 15, amrap: true,
-      anim: 'bulgarian', cue: 'Pied arrière posé sur la chaise. Sans poids au début, puis haltères en main.' },
-    sideplank: { name: 'Gainage latéral', muscle: 'Obliques', kind: 'time', uni: true, sets: 3, min: 30, max: 60, step: 5,
-      anim: 'sideplank', cue: 'Coude sous l’épaule, corps aligné, hanches hautes.' },
-    slrdl: { name: 'Soulevé de terre sur une jambe', muscle: 'Ischios, fessiers', kind: 'single', uni: true, sets: 3, min: 8, max: 15,
-      anim: 'slrdl', cue: 'Main libre contre un mur pour l’équilibre. Dos plat, la jambe arrière monte.' },
-    calf: { name: 'Mollets sur une marche', muscle: 'Mollets', kind: 'single', sets: 4, min: 15, max: 30,
-      anim: 'calf', cue: 'Talon sous la marche, monte le plus haut possible, 1 s en haut.' },
-    hipthrust: { name: 'Hip thrust', muscle: 'Fessiers', kind: 'single', sets: 4, min: 10, max: 20, amrap: true,
-      anim: 'hipthrust', cue: 'Épaules sur le lit ou le canapé, haltère sur les hanches. Monte jusqu’à l’horizontale.' },
-    warm: { name: 'Échauffement', long: 'Échauffement au rameur', muscle: 'Tout le corps', kind: 'cardio', sets: 1, minutes: 5,
-      anim: 'rower', cue: '4 min de rameur facile, puis 10 rotations d\u2019épaules et 10 squats sans poids.' },
-    rowint: { name: 'Rameur fractionné', muscle: 'Cardio, dos, jambes', kind: 'interval', sets: 1, rounds: 10, work: 40, rest: 20,
-      anim: 'rower', cue: 'Effort : tire fort, comme un sprint. Récup : rame tout doucement sans t\u2019arrêter. Tu dois finir rincé.' },
-    mountain: { name: 'Mountain climbers', muscle: 'Abdos, cardio', kind: 'time', sets: 3, min: 30, max: 60, step: 5,
-      anim: 'mountain', cue: 'En position de pompe, ramène les genoux vers la poitrine l\u2019un après l\u2019autre, vite.' },
-    wallsit: { name: 'Chaise contre le mur', muscle: 'Cuisses', kind: 'time', sets: 3, min: 45, max: 120, step: 5,
-      anim: 'wallsit', cue: 'Dos au mur, cuisses parallèles au sol. Tiens jusqu\u2019à ce que ça brûle, puis encore 5 s.' },
-    squat: { name: 'Squats enchaînés', muscle: 'Cuisses, fessiers, cardio', kind: 'level', sets: 3, min: 15, max: 30,
-      levels: ['Squat au poids du corps', 'Squat sauté'], anim: 'squat', cue: 'Le plus vite possible en gardant une bonne technique. Talons au sol en bas.' },
-  };
+/* ============ DONNÉES ============ */
+const rng = s => () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+const f1 = n => Math.round(n * 10) / 10;
 
+/* ---------- Illustrations de plats (SVG générés) ---------- */
+function blob(cx, cy, r, fill, R, jit = .22, n = 8, extra = '') {
+  const p = []; for (let i = 0; i < n; i++) { const a = i / n * 6.2832, rr = r * (1 - jit + R() * jit * 2); p.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); }
+  let d = 'M' + f1((p[0][0] + p[n - 1][0]) / 2) + ' ' + f1((p[0][1] + p[n - 1][1]) / 2);
+  for (let i = 0; i < n; i++) { const a = p[i], b = p[(i + 1) % n]; d += ` Q${f1(a[0])} ${f1(a[1])} ${f1((a[0] + b[0]) / 2)} ${f1((a[1] + b[1]) / 2)}`; }
+  return `<path d="${d}Z" fill="${fill}" ${extra}/>`;
+}
+function scatter(R, n, cx, cy, rad, fn) { let s = ''; for (let i = 0; i < n; i++) { const a = R() * 6.2832, d = Math.sqrt(R()) * rad; s += fn(cx + Math.cos(a) * d, cy + Math.sin(a) * d, i, R); } return s; }
+const leaf = (x, y, R, col = '#4E9B45') => `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="7" ry="3.4" transform="rotate(${Math.round(R() * 180)} ${f1(x)} ${f1(y)})" fill="${col}"/><ellipse cx="${f1(x)}" cy="${f1(y)}" rx="4" ry="1" transform="rotate(${Math.round(R() * 180)} ${f1(x)} ${f1(y)})" fill="rgba(255,255,255,.25)"/>`;
+const cube = (x, y, R, col = '#EFD3A0') => `<rect x="${f1(x - 6)}" y="${f1(y - 5)}" width="12" height="10" rx="3" transform="rotate(${Math.round(R() * 90)} ${f1(x)} ${f1(y)})" fill="${col}"/><rect x="${f1(x - 5)}" y="${f1(y - 5)}" width="10" height="4" rx="2" transform="rotate(${Math.round(R() * 90)} ${f1(x)} ${f1(y)})" fill="rgba(255,255,255,.35)"/>`;
+const DEFS = `<defs><radialGradient id="rim" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#CFC8B8"/></radialGradient><radialGradient id="well" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#FFFDF8"/><stop offset="1" stop-color="#E8E2D3"/></radialGradient><radialGradient id="bowl" cx=".35" cy=".3" r=".9"><stop offset="0" stop-color="#4B5E56"/><stop offset="1" stop-color="#1B2622"/></radialGradient><radialGradient id="gloss" cx=".3" cy=".25" r=".6"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`;
+const PLATE = `<ellipse cx="100" cy="178" rx="74" ry="8" fill="rgba(0,0,0,.35)"/><circle cx="100" cy="98" r="88" fill="url(#rim)"/><circle cx="100" cy="98" r="72" fill="url(#well)"/>`;
+const BOWL = `<ellipse cx="100" cy="178" rx="74" ry="8" fill="rgba(0,0,0,.35)"/><circle cx="100" cy="98" r="88" fill="url(#bowl)"/><circle cx="100" cy="98" r="76" fill="#0F1714"/>`;
 
-  // Fiches exercice : muscles (pour le schéma), consignes, erreurs fréquentes
-  const INFO = {
-    pompes: { mus: ['pecs', 'triceps', 'delts'], tips: ['Mains un peu plus larges que les épaules', 'Corps gainé, fesses serrées', 'Poitrine qui frôle le sol, puis pousse fort'], errs: ['Hanches qui tombent', 'Coudes ouverts à 90°'] },
-    row1: { mus: ['lats', 'upper', 'biceps'], tips: ['Main et genou en appui sur la chaise', 'Dos plat, regard vers le sol', 'Tire le coude vers la hanche'], errs: ['Tourner le buste pour tricher', 'Tirer avec la main au lieu du coude'] },
-    floorpress: { mus: ['pecs', 'triceps'], tips: ['Allongé, genoux pliés, pieds au sol', 'Coudes à 45° du corps', 'Les coudes touchent le sol, puis pousse'], errs: ['Rebondir sur le sol', 'Coudes collés à la tête'] },
-    lateral: { mus: ['delts'], tips: ['Bras légèrement fléchis', 'Monte jusqu’à la hauteur des épaules', 'Descente lente, 2 s'], errs: ['Prendre de l’élan avec le dos', 'Hausser les épaules'] },
-    ohp: { mus: ['delts', 'triceps'], tips: ['Assis, dos contre le dossier', 'Haltères à hauteur d’oreilles', 'Pousse vers le plafond sans bloquer les coudes'], errs: ['Cambrer le bas du dos', 'Descendre trop bas trop vite'] },
-    dips: { mus: ['triceps', 'pecs'], tips: ['Mains au bord d’une chaise stable', 'Dos près de la chaise', 'Descends jusqu’aux coudes à 90°'], errs: ['Descendre trop bas', 'Épaules qui remontent vers les oreilles'] },
-    triceps: { mus: ['triceps'], tips: ['Un haltère tenu à deux mains', 'Coudes pointés vers le plafond', 'Seuls les avant-bras bougent'], errs: ['Coudes qui s’écartent', 'Cambrer le dos'] },
-    lunge: { mus: ['quads', 'glutes'], tips: ['Grand pas en arrière', 'Le genou arrière frôle le sol', 'Pousse sur le talon avant pour remonter'], errs: ['Genou avant qui rentre vers l’intérieur', 'Buste penché en avant'] },
-    plank: { mus: ['abs'], tips: ['Coudes sous les épaules', 'Corps droit de la tête aux talons', 'Respire normalement'], errs: ['Fesses en l’air', 'Bas du dos creusé'] },
-    rdl: { mus: ['hams', 'glutes', 'lower'], tips: ['Genoux légèrement fléchis', 'Recule les fesses, dos plat', 'Haltères qui frôlent les cuisses'], errs: ['Dos rond', 'Plier les genoux comme un squat'] },
-    goblet: { mus: ['quads', 'glutes'], tips: ['Haltère contre la poitrine', 'Pieds largeur d’épaules', 'Descends sous la parallèle, talons au sol'], errs: ['Talons qui décollent', 'Genoux qui rentrent'] },
-    bridge: { mus: ['glutes', 'hams'], tips: ['Allongé, pieds près des fesses', 'Haltère posé sur les hanches', 'Serre les fessiers 2 s en haut'], errs: ['Cambrer au lieu de pousser avec les fessiers', 'Pieds trop loin'] },
-    rower: { mus: ['lats', 'quads', 'hams'], tips: ['Pousse d’abord avec les jambes', 'Puis recule le buste, puis tire les bras', 'Rythme où tu peux parler'], errs: ['Tirer avec les bras en premier', 'Dos rond'] },
-    pullup: { mus: ['lats', 'biceps', 'upper'], tips: ['Un genou dans l’élastique', 'Tire les coudes vers les côtes', 'Menton au-dessus de la barre'], errs: ['Se balancer', 'Descendre à moitié'] },
-    bentrow: { mus: ['lats', 'upper', 'biceps'], tips: ['Buste penché à 45°, dos plat', 'Tire les haltères vers le nombril', 'Descente lente, 3 s'], errs: ['Dos rond', 'Se redresser pour tricher'] },
-    reardelt: { mus: ['delts', 'upper'], tips: ['Buste penché, dos plat', 'Bras presque tendus', 'Ouvre les bras comme des ailes'], errs: ['Trop lourd', 'Remonter le buste'] },
-    curl: { mus: ['biceps'], tips: ['Coudes collés au corps', 'Monte sans balancer', 'Descente lente, 2 s'], errs: ['Se balancer avec le dos', 'Coudes qui avancent'] },
-    hammer: { mus: ['biceps'], tips: ['Pouces vers le haut', 'Coudes collés au corps', 'Descente contrôlée'], errs: ['Poignets cassés', 'Élan avec les épaules'] },
-    bulgarian: { mus: ['quads', 'glutes'], tips: ['Pied arrière posé sur la chaise', 'Descends à la verticale', 'Pousse sur le talon avant'], errs: ['Pied avant trop près de la chaise', 'Genou avant qui rentre'] },
-    sideplank: { mus: ['obliques', 'abs'], tips: ['Coude sous l’épaule', 'Corps aligné', 'Hanches hautes'], errs: ['Hanches qui tombent', 'Corps qui tourne'] },
-    slrdl: { mus: ['hams', 'glutes'], tips: ['Main libre contre un mur', 'Dos plat, la jambe arrière monte', 'Genou d’appui légèrement fléchi'], errs: ['Dos rond', 'Hanche qui s’ouvre'] },
-    calf: { mus: ['calves'], tips: ['Avant du pied sur la marche', 'Descends le talon sous la marche', 'Monte le plus haut possible, 1 s en haut'], errs: ['Rebondir', 'Mouvement trop court'] },
-    hipthrust: { mus: ['glutes', 'hams'], tips: ['Épaules sur le lit ou le canapé', 'Haltère sur les hanches', 'Monte jusqu’à l’horizontale, serre 1 s'], errs: ['Cambrer le bas du dos', 'Pousser avec les orteils'] },
-    warm: { mus: ['quads', 'lats', 'delts'], tips: ['Rythme où tu peux parler', 'Pousse avec les jambes, puis tire', 'Termine par la mobilité des épaules'], errs: ['Partir trop fort', 'Sauter l\u2019échauffement'] },
-    rowint: { mus: ['lats', 'quads', 'hams', 'upper'], tips: ['Jambes, puis buste, puis bras', 'À fond pendant l\u2019effort', 'Ne t\u2019arrête jamais pendant la récup'], errs: ['Tirer seulement avec les bras', 'Dos rond en fin de mouvement'] },
-    mountain: { mus: ['abs', 'quads', 'delts'], tips: ['Mains sous les épaules', 'Hanches basses', 'Genoux vers la poitrine, vite'], errs: ['Fesses en l\u2019air', 'Pieds qui ne bougent presque pas'] },
-    wallsit: { mus: ['quads', 'glutes'], tips: ['Dos collé au mur', 'Genoux à 90°', 'Mains sur les cuisses, pas en appui'], errs: ['Cuisses trop hautes', 'Pousser avec les mains'] },
-    squat: { mus: ['quads', 'glutes'], tips: ['Pieds largeur d\u2019épaules', 'Descends sous la parallèle', 'Remonte en poussant fort'], errs: ['Talons qui décollent', 'Dos qui s\u2019arrondit en bas'] },
-  };
-  for (const id in INFO) Object.assign(EX[id], INFO[id]);
+function art(t, seed = 1, c = '#D8452B', c2 = '#F5E6C8') {
+  const R = rng(seed * 977 + 13); let s = '';
+  if (t === 'pasta') {
+    s = PLATE;
+    for (let k = 0; k < 11; k++) s += `<ellipse cx="100" cy="98" rx="${26 + k * 2.6}" ry="${16 + k * 1.8}" transform="rotate(${k * 33} 100 98)" fill="none" stroke="${k % 2 ? '#E7BC63' : '#F2D183'}" stroke-width="6.5" stroke-linecap="round" stroke-dasharray="${40 + R() * 70} ${6 + R() * 22}"/>`;
+    s += blob(100, 98, 30, c, R, .25, 9, 'opacity=".92"') + scatter(R, 5, 100, 98, 30, (x, y, i, r) => cube(x, y, r)) + scatter(R, 4, 100, 98, 36, (x, y, i, r) => leaf(x, y, r)) + scatter(R, 9, 100, 98, 34, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="1.8" fill="${c2}"/>`);
+  } else if (t === 'burger') {
+    s = `<ellipse cx="100" cy="170" rx="82" ry="10" fill="rgba(0,0,0,.4)"/><rect x="18" y="150" width="164" height="14" rx="7" fill="#8A6A44"/><rect x="18" y="150" width="164" height="5" rx="2.5" fill="#B08C5C"/>`
+      + `<path d="M40 142q60-6 120 0 6 0 6 8 0 6-8 6H42q-8 0-8-6 0-8 6-8z" fill="#E1A24F"/>`
+      + `<rect x="38" y="122" width="124" height="22" rx="11" fill="#5B3320"/><rect x="42" y="124" width="116" height="6" rx="3" fill="#7B4A2E"/>`
+      + `<path d="M36 120h128l-8 14-12-6-12 8-12-8-12 8-12-8-12 8-12-8-12 6z" fill="#F4B63C"/>`
+      + `<path d="M32 112q8 8 17 0t17 0 17 0 17 0 17 0 17 0 17 0 10-3v8q-8 8-17 0t-17 0-17 0-17 0-17 0-17 0-17 0-8 4z" fill="#58A24B"/>`
+      + `<rect x="40" y="100" width="120" height="9" rx="4.5" fill="#D8452B"/>`
+      + `<path d="M30 98C30 56 62 40 100 40s70 16 70 58z" fill="#E7A44D"/><path d="M44 78C50 56 74 48 100 48" stroke="rgba(255,255,255,.4)" stroke-width="5" stroke-linecap="round" fill="none"/>`
+      + scatter(R, 11, 100, 66, 44, (x, y) => y < 94 ? `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="3" ry="1.6" fill="#FFF3D6" transform="rotate(${Math.round(R() * 90)} ${f1(x)} ${f1(y)})"/>` : '');
+  } else if (t === 'bowl') {
+    s = BOWL + `<path d="M100 98 L100 26 A72 72 0 0 1 163 62 Z" fill="#F5F0DE"/>` + scatter(R, 60, 134, 62, 38, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="2.2" fill="#FFFDF2"/>`)
+      + `<path d="M100 98 L163 62 A72 72 0 0 1 100 170 Z" fill="#6A3A22"/>` + scatter(R, 7, 134, 124, 26, (x, y, i, r) => `<rect x="${f1(x - 10)}" y="${f1(y - 4)}" width="20" height="8" rx="4" fill="${i % 2 ? '#8D4B2B' : '#A85C36'}" transform="rotate(${Math.round(R() * 160)} ${f1(x)} ${f1(y)})"/>`)
+      + `<path d="M100 98 L100 170 A72 72 0 0 1 28 98 Z" fill="#2E5D2D"/>` + scatter(R, 8, 62, 136, 24, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(6 + R() * 3)}" fill="#4F9A3E"/><circle cx="${f1(x - 2)}" cy="${f1(y - 2)}" r="2.5" fill="rgba(255,255,255,.25)"/>`)
+      + `<path d="M28 98 A72 72 0 0 1 100 26 L100 98 Z" fill="${c}"/>` + scatter(R, 6, 66, 62, 24, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="5" fill="rgba(255,255,255,.28)"/>`);
+  } else if (t === 'pizza') {
+    s = `<ellipse cx="100" cy="178" rx="74" ry="8" fill="rgba(0,0,0,.35)"/><circle cx="100" cy="98" r="86" fill="#D9A24D"/><circle cx="100" cy="98" r="78" fill="#EDBE6A"/><circle cx="100" cy="98" r="68" fill="${c}"/>`
+      + scatter(R, 9, 100, 98, 56, (x, y) => blob(x, y, 12, '#F9F0D4', R, .3, 7, 'opacity=".95"')) + scatter(R, 7, 100, 98, 54, (x, y, i, r) => cube(x, y, r, '#E8C98F')) + scatter(R, 5, 100, 98, 52, (x, y, i, r) => leaf(x, y, r));
+  } else if (t === 'stew') {
+    s = BOWL + `<circle cx="100" cy="98" r="66" fill="${c}"/>` + scatter(R, 30, 100, 98, 58, (x, y, i) => `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="4" ry="2.8" transform="rotate(${Math.round(R() * 180)} ${f1(x)} ${f1(y)})" fill="${i % 3 ? '#6E1D14' : '#8A3A22'}"/>`)
+      + scatter(R, 20, 100, 98, 56, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="2.2" fill="#3F1008" opacity=".7"/>`) + blob(104, 92, 17, '#FFF6E2', R, .18, 8) + `<circle cx="98" cy="86" r="5" fill="rgba(255,255,255,.55)"/>` + scatter(R, 5, 104, 92, 22, (x, y, i, r) => leaf(x, y, r, '#5BAA4A'));
+  } else if (t === 'curry') {
+    s = BOWL + `<circle cx="100" cy="98" r="66" fill="#E48A2D"/><circle cx="100" cy="98" r="66" fill="url(#gloss)"/>` + scatter(R, 7, 96, 98, 40, (x, y, i, r) => cube(x, y, r, '#B8662A'))
+      + `<path d="M70 90q15-16 30 0t30 0" stroke="#FFF1D6" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M76 106q12-12 24 0t24 0" stroke="#FFF1D6" stroke-width="5" stroke-linecap="round" fill="none" opacity=".8"/>` + scatter(R, 5, 100, 98, 54, (x, y, i, r) => leaf(x, y, r, '#5BAA4A'));
+  } else if (t === 'omelet') {
+    s = PLATE + `<path d="M34 100C34 54 66 36 100 36s66 18 66 64c0 20-20 34-66 34S34 120 34 100z" fill="#F2CB4C"/><path d="M34 100C34 54 66 36 100 36s66 18 66 64c0 20-20 34-66 34" fill="url(#gloss)"/><path d="M100 36c-6 30-6 70 0 98" stroke="#D9A92B" stroke-width="3" fill="none"/>`
+      + scatter(R, 14, 100, 90, 48, (x, y, i, r) => leaf(x, y, r, '#3F8F3A')) + scatter(R, 8, 100, 90, 46, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="3.5" fill="#FFF3C0"/>`);
+  } else if (t === 'fish') {
+    s = PLATE + `<path d="M40 70q40-26 90-4 22 10 28 34-8 22-44 26-56 6-80-16 0-22 6-40z" fill="#F08A68"/>` + [0, 1, 2, 3, 4].map(i => `<path d="M${54 + i * 20} 72q8 22 -6 50" stroke="#FFC6AE" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".8"/>`).join('') + `<path d="M40 70q40-26 90-4" stroke="rgba(255,255,255,.4)" stroke-width="4" fill="none" stroke-linecap="round"/>`
+      + scatter(R, 8, 138, 142, 18, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(7 + R() * 3)}" fill="#3E8E3B"/><circle cx="${f1(x - 2)}" cy="${f1(y - 2)}" r="2.4" fill="rgba(255,255,255,.3)"/>`)
+      + `<path d="M52 140q18-14 34 0-8 16-34 0z" fill="#F5E66A"/><path d="M58 142q10-8 22 0" stroke="#FFF7B0" stroke-width="3" fill="none"/>`;
+  } else if (t === 'pie') {
+    s = `<ellipse cx="100" cy="176" rx="82" ry="9" fill="rgba(0,0,0,.35)"/><rect x="18" y="54" width="164" height="100" rx="24" fill="#D8D1C3"/><rect x="26" y="62" width="148" height="84" rx="18" fill="#E7B15A"/><rect x="26" y="62" width="148" height="84" rx="18" fill="url(#gloss)"/>`
+      + Array.from({ length: 11 }, (_, i) => `<path d="M${36 + i * 13} 68v72" stroke="#C98A32" stroke-width="3" stroke-linecap="round" opacity=".75"/>`).join('') + scatter(R, 18, 100, 104, 62, (x, y) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="2.4" fill="#F8D58C"/>`);
+  } else if (t === 'dessert') {
+    s = BOWL + `<circle cx="100" cy="98" r="66" fill="#FFFFFF"/><circle cx="100" cy="98" r="66" fill="url(#gloss)"/>` + scatter(R, 16, 100, 98, 50, (x, y, i) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(5 + R() * 3)}" fill="${i % 3 ? '#B42A4E' : '#5B3A8C'}"/><circle cx="${f1(x - 1.5)}" cy="${f1(y - 1.5)}" r="1.6" fill="rgba(255,255,255,.5)"/>`)
+      + scatter(R, 9, 100, 98, 46, (x, y) => `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="6" ry="3" transform="rotate(${Math.round(R() * 180)} ${f1(x)} ${f1(y)})" fill="#E8C98F"/>`);
+  } else if (t === 'tenders') {
+    s = `<ellipse cx="100" cy="176" rx="76" ry="9" fill="rgba(0,0,0,.35)"/><rect x="26" y="40" width="148" height="124" rx="26" fill="#C8382B"/>` + [0, 1, 2].map(i => `<rect x="${44 + i * 14}" y="${58 + i * 22}" width="92" height="24" rx="12" transform="rotate(${-14 + i * 8} 100 100)" fill="#E3A23C"/><rect x="${52 + i * 14}" y="${62 + i * 22}" width="76" height="7" rx="3.5" transform="rotate(${-14 + i * 8} 100 100)" fill="rgba(255,255,255,.3)"/>`).join('') + `<circle cx="150" cy="140" r="16" fill="#F4E3B8"/><circle cx="150" cy="140" r="10" fill="#C8382B"/>`;
+  } else if (t === 'fries') {
+    s = `<ellipse cx="100" cy="176" rx="60" ry="8" fill="rgba(0,0,0,.35)"/>` + Array.from({ length: 16 }, (_, i) => `<rect x="${52 + i * 6.2}" y="${30 + (i % 4) * 8}" width="6" height="100" rx="3" transform="rotate(${-10 + i * 1.3} 100 100)" fill="${i % 2 ? '#F2C23A' : '#E8B02A'}"/>`).join('') + `<path d="M56 108h88l-10 64H66z" fill="#C8382B"/><path d="M56 108h88l-2 12H58z" fill="#E05445"/>`;
+  } else if (t === 'bun') {
+    s = PLATE + scatter(R, 6, 100, 98, 34, (x, y) => `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="19" ry="12" fill="#E7B15A"/><ellipse cx="${f1(x)}" cy="${f1(y - 3)}" rx="14" ry="6" fill="rgba(255,255,255,.28)"/>`);
+  }
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DEFS}${s}</svg>`;
+}
+/* Emballage de produit surgelé (illustration stylisée) */
+function pack(a, seed, tone) {
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${DEFS}<defs><linearGradient id="pk${seed}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${tone}"/><stop offset="1" stop-color="#0E1A2A"/></linearGradient></defs><ellipse cx="100" cy="182" rx="66" ry="7" fill="rgba(0,0,0,.35)"/><rect x="38" y="22" width="124" height="158" rx="14" fill="url(#pk${seed})"/><rect x="38" y="22" width="124" height="158" rx="14" fill="none" stroke="rgba(255,255,255,.25)"/><path d="M38 44h124" stroke="rgba(255,255,255,.2)"/><g transform="translate(36 52) scale(.64)">${a}</g><g stroke="rgba(255,255,255,.55)" stroke-width="1.4" stroke-linecap="round"><path d="M56 34l8 0M60 30v8M58 32l4 4M62 32l-4 4"/><path d="M138 34l8 0M142 30v8M140 32l4 4M144 32l-4 4"/></g></svg>`;
+}
+const inner = (t, s, c, c2) => art(t, s, c, c2).replace(/<svg[^>]*>|<\/svg>|<defs>.*?<\/defs>/gs, '');
 
-  // Poids "normaux" de départ : kg par haltère (pair/single), index de niveau (level), secondes (time)
-  const START = {
-    pompes: 1, row1: 12, floorpress: 10, lateral: 4, ohp: 8, dips: 1, triceps: 12,
-    lunge: 8, plank: 40, rdl: 10, goblet: 14, bridge: 16, rower: 10,
-    pullup: 0, bentrow: 10, reardelt: 4, curl: 8, hammer: 8,
-    bulgarian: 6, sideplank: 30, slrdl: 10, calf: 14, hipthrust: 18,
-    warm: 5, rowint: 10, mountain: 30, wallsit: 45, squat: 1,
-  };
+/* ---------- Recettes ---------- */
+const RECIPES = [
+  { id: 'r1', name: 'Penne arrabbiata au poulet', t: 'pasta', c: '#D8452B', k: 610, p: 49, g: 72, l: 13, min: 20, tags: ['pates', 'tomate', 'epice', 'rapide'], bg: ['#5A2216', '#E26A3B'],
+    ing: [['Penne', 90, 'g', 'Épicerie'], ['Blanc de poulet', 150, 'g', 'Viandes'], ['Sauce tomate', 120, 'g', 'Épicerie'], ['Ail', 1, 'gousse', 'Fruits & légumes'], ['Piment en flocons', 1, 'pincée', 'Épicerie'], ['Parmesan', 15, 'g', 'Frais'], ['Huile d\'olive', 5, 'g', 'Épicerie']],
+    steps: ['Cuis les penne 2 minutes de moins que l\'indication du paquet.', 'Saisis le poulet en dés avec l\'huile, l\'ail et le piment 6 minutes.', 'Ajoute la sauce tomate, laisse mijoter 5 minutes, mélange avec les pâtes et un peu d\'eau de cuisson.', 'Termine avec le parmesan.'] },
+  { id: 'r2', name: 'Pâtes crémeuses poulet-parmesan', t: 'pasta', c: '#F3E3BE', c2: '#E8C98F', k: 640, p: 52, g: 66, l: 18, min: 20, tags: ['pates', 'fromage', 'cremeux', 'copieux'], bg: ['#4A3A1A', '#E8C98F'],
+    ing: [['Pâtes', 90, 'g', 'Épicerie'], ['Blanc de poulet', 150, 'g', 'Viandes'], ['Crème légère 15 %', 60, 'ml', 'Frais'], ['Parmesan', 25, 'g', 'Frais'], ['Épinards frais', 60, 'g', 'Fruits & légumes'], ['Ail', 1, 'gousse', 'Fruits & légumes']],
+    steps: ['Cuis les pâtes.', 'Dore le poulet en lamelles avec l\'ail 6 minutes.', 'Ajoute la crème et les épinards, laisse fondre 2 minutes.', 'Mélange avec les pâtes et le parmesan, poivre noir.'] },
+  { id: 'r3', name: 'Chili con carne épicé', t: 'stew', c: '#B33A22', k: 580, p: 48, g: 58, l: 16, min: 35, tags: ['epice', 'copieux', 'tomate'], bg: ['#4A1710', '#C0452B'],
+    ing: [['Bœuf haché 5 %', 150, 'g', 'Viandes'], ['Haricots rouges', 100, 'g', 'Épicerie'], ['Tomates concassées', 150, 'g', 'Épicerie'], ['Riz', 60, 'g', 'Épicerie'], ['Oignon', 0.5, 'pièce', 'Fruits & légumes'], ['Cumin, paprika, piment', 2, 'càc', 'Épicerie'], ['Yaourt grec', 30, 'g', 'Frais']],
+    steps: ['Fais revenir l\'oignon puis le bœuf 6 minutes.', 'Ajoute épices, tomates et haricots, mijote 20 minutes.', 'Cuis le riz.', 'Sers avec une cuillère de yaourt grec.'] },
+  { id: 'r4', name: 'Cheeseburger maison', t: 'burger', k: 690, p: 54, g: 48, l: 30, min: 25, tags: ['fromage', 'copieux', 'gourmand'], bg: ['#4A3414', '#D69A44'],
+    ing: [['Pain à burger', 1, 'pièce', 'Boulangerie'], ['Bœuf haché 5 %', 150, 'g', 'Viandes'], ['Cheddar en tranches', 2, 'tranches', 'Frais'], ['Oignon', 0.5, 'pièce', 'Fruits & légumes'], ['Cornichons', 30, 'g', 'Épicerie'], ['Sauce burger allégée', 20, 'g', 'Épicerie'], ['Salade', 30, 'g', 'Fruits & légumes']],
+    steps: ['Forme un steak épais, sale et poivre.', 'Saisis 3 minutes de chaque côté, cheddar sur le dernier côté.', 'Toaste le pain.', 'Monte : sauce, salade, steak, oignon, cornichons.'] },
+  { id: 'r5', name: 'Pizza pita poulet-mozzarella', t: 'pizza', c: '#D8452B', k: 520, p: 44, g: 50, l: 16, min: 15, tags: ['tomate', 'fromage', 'rapide', 'gourmand'], bg: ['#5A2A1B', '#E58A4A'],
+    ing: [['Pita grande', 1, 'pièce', 'Boulangerie'], ['Sauce tomate', 60, 'g', 'Épicerie'], ['Mozzarella', 60, 'g', 'Frais'], ['Poulet cuit', 100, 'g', 'Viandes'], ['Origan', 1, 'càc', 'Épicerie']],
+    steps: ['Four à 220 °C.', 'Étale la sauce sur la pita, ajoute poulet et mozzarella.', 'Enfourne 8 minutes.', 'Origan et huile pimentée si tu aimes.'] },
+  { id: 'r6', name: 'Poulet tikka masala', t: 'curry', k: 610, p: 50, g: 60, l: 18, min: 35, tags: ['epice', 'cremeux', 'copieux'], bg: ['#5B3210', '#E5933A'],
+    ing: [['Poulet', 170, 'g', 'Viandes'], ['Yaourt grec', 60, 'g', 'Frais'], ['Sauce tikka masala', 100, 'g', 'Épicerie'], ['Riz basmati', 70, 'g', 'Épicerie'], ['Coriandre', 5, 'g', 'Fruits & légumes']],
+    steps: ['Marine le poulet dans le yaourt et les épices 10 minutes.', 'Saisis-le à la poêle 6 minutes.', 'Ajoute la sauce, mijote 12 minutes.', 'Sers sur le riz avec la coriandre.'] },
+  { id: 'r7', name: 'Bowl bœuf teriyaki', t: 'bowl', c: '#E86A3C', k: 560, p: 46, g: 62, l: 13, min: 15, tags: ['rapide', 'gourmand'], bg: ['#3A2418', '#B26A3A'],
+    ing: [['Bœuf (rumsteck)', 150, 'g', 'Viandes'], ['Riz', 70, 'g', 'Épicerie'], ['Brocoli', 120, 'g', 'Fruits & légumes'], ['Sauce teriyaki', 25, 'ml', 'Épicerie'], ['Graines de sésame', 5, 'g', 'Épicerie']],
+    steps: ['Cuis le riz et le brocoli vapeur.', 'Saisis le bœuf en lamelles 3 minutes.', 'Ajoute la sauce teriyaki 1 minute.', 'Dresse en bowl, sésame par-dessus.'] },
+  { id: 'r8', name: 'Omelette fromage-épinards', t: 'omelet', k: 410, p: 34, g: 6, l: 28, min: 10, tags: ['fromage', 'rapide'], bg: ['#4A4010', '#F0D060'],
+    ing: [['Œufs', 3, 'pièces', 'Frais'], ['Fromage râpé', 30, 'g', 'Frais'], ['Épinards frais', 80, 'g', 'Fruits & légumes'], ['Beurre', 5, 'g', 'Frais']],
+    steps: ['Fais tomber les épinards au beurre 1 minute.', 'Verse les œufs battus, cuis à feu moyen.', 'Fromage au centre, plie et laisse fondre 1 minute.'] },
+  { id: 'r9', name: 'Gnocchis tomate-mozzarella', t: 'pasta', c: '#D8452B', c2: '#FFF6E2', k: 600, p: 38, g: 84, l: 14, min: 20, tags: ['pates', 'tomate', 'fromage', 'gourmand'], bg: ['#5A2216', '#E8704A'],
+    ing: [['Gnocchis', 250, 'g', 'Frais'], ['Sauce tomate', 150, 'g', 'Épicerie'], ['Mozzarella', 80, 'g', 'Frais'], ['Basilic', 5, 'g', 'Fruits & légumes']],
+    steps: ['Poêle les gnocchis 6 minutes jusqu\'à dorure.', 'Ajoute la sauce, laisse chauffer.', 'Mozzarella par-dessus, couvercle 3 minutes.', 'Basilic frais.'] },
+  { id: 'r10', name: 'Parmentier de bœuf', t: 'pie', k: 540, p: 42, g: 48, l: 20, min: 45, tags: ['copieux'], bg: ['#4A3318', '#D69A44'],
+    ing: [['Bœuf haché 5 %', 150, 'g', 'Viandes'], ['Pommes de terre', 250, 'g', 'Fruits & légumes'], ['Carotte', 1, 'pièce', 'Fruits & légumes'], ['Lait demi-écrémé', 50, 'ml', 'Frais'], ['Fromage râpé', 20, 'g', 'Frais']],
+    steps: ['Cuis les pommes de terre, écrase avec le lait.', 'Fais revenir bœuf et carotte 8 minutes.', 'Monte en couches, fromage dessus.', 'Gratine 12 minutes à 200 °C.'] },
+  { id: 'r11', name: 'Saumon, riz et brocolis', t: 'fish', k: 560, p: 40, g: 52, l: 20, min: 20, tags: ['rapide'], bg: ['#4A2A22', '#F08A68'],
+    ing: [['Pavé de saumon', 150, 'g', 'Poissons'], ['Riz', 70, 'g', 'Épicerie'], ['Brocoli', 150, 'g', 'Fruits & légumes'], ['Citron', 0.5, 'pièce', 'Fruits & légumes']],
+    steps: ['Cuis le riz, vapeur pour le brocoli.', 'Saumon à la poêle côté peau 5 minutes, retourne 2 minutes.', 'Citron et poivre.'] },
+  { id: 'r12', name: 'Spaghettis bolognaise', t: 'pasta', c: '#9E2E1C', k: 630, p: 46, g: 76, l: 15, min: 25, tags: ['pates', 'tomate', 'copieux'], bg: ['#4A1710', '#C0452B'],
+    ing: [['Spaghettis', 90, 'g', 'Épicerie'], ['Bœuf haché 5 %', 130, 'g', 'Viandes'], ['Sauce tomate', 150, 'g', 'Épicerie'], ['Carotte', 0.5, 'pièce', 'Fruits & légumes'], ['Oignon', 0.5, 'pièce', 'Fruits & légumes'], ['Parmesan', 15, 'g', 'Frais']],
+    steps: ['Fais revenir oignon, carotte et bœuf 8 minutes.', 'Ajoute la sauce, mijote 15 minutes.', 'Sers sur les spaghettis avec le parmesan.'] },
+  { id: 'r13', name: 'Fajitas de poulet', t: 'bowl', c: '#D8452B', k: 540, p: 44, g: 56, l: 15, min: 20, tags: ['epice', 'rapide', 'gourmand'], bg: ['#4A2A10', '#D8843A'],
+    ing: [['Tortillas', 2, 'pièces', 'Épicerie'], ['Blanc de poulet', 150, 'g', 'Viandes'], ['Poivrons', 120, 'g', 'Fruits & légumes'], ['Fromage râpé', 20, 'g', 'Frais'], ['Épices fajitas', 2, 'càc', 'Épicerie']],
+    steps: ['Émince poulet et poivrons.', 'Fais-les sauter avec les épices 8 minutes.', 'Garnis les tortillas chaudes, fromage.'] },
+  { id: 'r14', name: 'Porridge protéiné à la banane', t: 'dessert', k: 430, p: 30, g: 58, l: 9, min: 7, tags: ['rapide', 'petitdej'], bg: ['#3A3014', '#E8C060'],
+    ing: [['Flocons d\'avoine', 60, 'g', 'Épicerie'], ['Skyr', 100, 'g', 'Frais'], ['Banane', 1, 'pièce', 'Fruits & légumes'], ['Lait demi-écrémé', 150, 'ml', 'Frais']],
+    steps: ['Chauffe flocons et lait 3 minutes en remuant.', 'Hors du feu, ajoute le skyr.', 'Banane en rondelles par-dessus.'] },
+  { id: 'r15', name: 'Skyr, fruits rouges et amandes', t: 'dessert', k: 260, p: 25, g: 24, l: 8, min: 3, tags: ['rapide', 'dessert', 'petitdej'], bg: ['#3A1A3A', '#B42A4E'],
+    ing: [['Skyr', 200, 'g', 'Frais'], ['Fruits rouges surgelés', 80, 'g', 'Surgelés'], ['Amandes', 10, 'g', 'Épicerie']],
+    steps: ['Verse le skyr dans un bol.', 'Ajoute fruits rouges et amandes.'] }
+];
+const TAGS = [['pates', 'Pâtes'], ['fromage', 'Fromage'], ['tomate', 'Sauce tomate'], ['cremeux', 'Crémeux'], ['epice', 'Épicé'], ['copieux', 'Copieux'], ['gourmand', 'Gourmand'], ['rapide', 'Rapide']];
 
-  const SESSIONS = {
-    haut_a: { name: 'Haut A', sub: 'Pecs, épaules, triceps', minutes: 60,
-      blocks: [['É', ['warm']], ['A', ['pompes', 'row1']], ['B', ['floorpress', 'lateral']], ['C', ['ohp', 'reardelt']], ['D', ['dips', 'triceps'], { rest: [20, 60] }], ['F', ['rowint']]] },
-    bas_a: { name: 'Bas A', sub: 'Jambes, fessiers, gainage', minutes: 60,
-      blocks: [['É', ['warm']], ['A', ['lunge', 'plank']], ['B', ['rdl', 'goblet']], ['C', ['bridge', 'calf'], { rest: [20, 60] }], ['F', ['rowint']]] },
-    haut_b: { name: 'Haut B', sub: 'Dos, épaules, biceps', minutes: 60,
-      blocks: [['É', ['warm']], ['A', ['pullup', 'pompes']], ['B', ['bentrow', 'ohp']], ['C', ['lateral', 'reardelt'], { rest: [20, 60] }], ['D', ['curl', 'hammer'], { rest: [20, 60] }], ['F', ['squat', 'mountain'], { rest: [15, 40] }]] },
-    bas_b: { name: 'Bas B', sub: 'Jambes, fessiers, gainage', minutes: 60,
-      blocks: [['É', ['warm']], ['A', ['bulgarian', 'sideplank']], ['B', ['slrdl', 'squat']], ['C', ['hipthrust', 'wallsit']], ['F', ['rowint']]] },
-  };
-  const ORDER = ['haut_a', 'bas_a', 'haut_b', 'bas_b'];
-  // getDay() : 0 = dimanche
-  const DEFAULT_DAYS = { haut_a: 1, bas_a: 2, haut_b: 4, bas_b: 5 };
+/* ---------- Fast-food à Amiens (estimations de démonstration) ---------- */
+const FAST = [
+  { chain: 'McDonald\'s', where: 'Centre-ville, Dury, Glisy, La Bretèche', col: '#F2B21B', items: [
+    { id: 'f1', name: 'Double cheeseburger', k: 450, p: 26, g: 34, l: 24, t: 'burger', tier: 'best' },
+    { id: 'f2', name: 'Burger poulet crispy', k: 480, p: 22, g: 48, l: 22, t: 'burger', tier: 'mid' },
+    { id: 'f3', name: 'Menu maxi burger, frites, soda', k: 1300, p: 38, g: 150, l: 58, t: 'fries', tier: 'worst' }] },
+  { chain: 'Burger King', where: 'Centre, Nord, Sud', col: '#D8452B', items: [
+    { id: 'f4', name: 'Burger poulet grillé', k: 480, p: 30, g: 42, l: 20, t: 'burger', tier: 'best' },
+    { id: 'f5', name: 'Whopper', k: 650, p: 29, g: 50, l: 36, t: 'burger', tier: 'mid' },
+    { id: 'f6', name: 'Menu double, onion rings, soda', k: 1250, p: 45, g: 130, l: 60, t: 'fries', tier: 'worst' }] },
+  { chain: 'KFC', where: 'Centre-ville, Nord, Sud', col: '#C8202F', items: [
+    { id: 'f7', name: '5 tenders + salade', k: 420, p: 32, g: 22, l: 22, t: 'tenders', tier: 'best' },
+    { id: 'f8', name: 'Burger poulet + frites moyennes', k: 820, p: 30, g: 85, l: 38, t: 'burger', tier: 'mid' },
+    { id: 'f9', name: 'Seau partagé pour un', k: 1400, p: 62, g: 120, l: 74, t: 'tenders', tier: 'worst' }] },
+  { chain: 'Quick', where: 'Place René Goblet', col: '#6BB0E0', items: [
+    { id: 'f10', name: 'Chicken burger sans frites', k: 470, p: 24, g: 44, l: 20, t: 'burger', tier: 'best' },
+    { id: 'f11', name: 'Cheese burger + frites', k: 780, p: 28, g: 80, l: 36, t: 'burger', tier: 'mid' },
+    { id: 'f12', name: 'Menu giant', k: 1150, p: 40, g: 110, l: 56, t: 'fries', tier: 'worst' }] }
+];
 
-  return { EX, START, SESSIONS, ORDER, DEFAULT_DAYS };
-})();
+/* ---------- Programme de sport ---------- */
+const EX = {
+  pompes: { name: 'Pompes', mus: 'Pectoraux, triceps', sets: 4, reps: [8, 15], rest: 75, vars: ['Pompes mains sur table', 'Pompes mains sur chaise', 'Pompes classiques', 'Pompes pieds surélevés'], lvl: 2, cue: 'Corps gainé du talon à la tête. Coudes à 45°. Descends la poitrine à un poing du sol.' },
+  dev: { name: 'Développé haltères au sol', mus: 'Pectoraux, épaules', sets: 3, reps: [8, 12], rest: 90, load: [6, 1, 10], cue: 'Omoplates serrées. Coudes à 45° du buste. Touche le sol, puis pousse en expirant.' },
+  elev: { name: 'Élévations latérales', mus: 'Épaules', sets: 3, reps: [12, 20], rest: 60, load: [3, 1, 8], cue: 'Légère flexion du coude. Monte jusqu\'à l\'horizontale, descends en 2 secondes.' },
+  tri: { name: 'Extension triceps haltère', mus: 'Triceps', sets: 3, reps: [10, 15], rest: 60, load: [5, 1, 10], cue: 'Coude près de la tête. Descends l\'haltère derrière la nuque, étire, remonte.' },
+  dips: { name: 'Dips sur chaise', mus: 'Triceps, pectoraux', sets: 3, reps: [8, 15], rest: 60, vars: ['Dips genoux fléchis', 'Dips jambes tendues', 'Dips pieds surélevés'], lvl: 0, cue: 'Mains au bord de la chaise, dos proche du siège. Descends jusqu\'à 90° au coude.' },
+  planche: { name: 'Planche', mus: 'Sangle abdominale', sets: 3, reps: [30, 60], step: 5, timed: true, rest: 45, cue: 'Coudes sous les épaules, bassin aligné, fessiers serrés. Respire calmement.' },
+  trac: { name: 'Traction assistée par élastique', mus: 'Dos, biceps', sets: 4, reps: [4, 8], rest: 120, vars: ['Élastique épais', 'Élastique moyen', 'Élastique fin', 'Traction stricte'], lvl: 0, cue: 'Épaules basses avant de tirer. Menton au-dessus de la barre. Descente en 3 secondes.' },
+  row: { name: 'Rowing haltère à un bras', mus: 'Dos', sets: 4, reps: [8, 12], rest: 75, load: [8, 1, 10], cue: 'Dos plat, main sur un banc ou une chaise. Tire le coude vers la hanche, pause 1 seconde. Séries par bras.' },
+  rowe: { name: 'Rowing élastique', mus: 'Dos, arrière d\'épaule', sets: 3, reps: [12, 20], rest: 60, vars: ['Élastique léger', 'Élastique moyen', 'Élastique fort'], lvl: 1, cue: 'Assis jambes tendues, élastique autour des pieds. Tire vers le nombril, serre les omoplates.' },
+  face: { name: 'Tirage visage élastique', mus: 'Arrière d\'épaule', sets: 3, reps: [15, 20], rest: 45, vars: ['Élastique léger', 'Élastique moyen'], lvl: 0, cue: 'Élastique fixé à hauteur du visage. Tire vers le front, coudes hauts.' },
+  curl: { name: 'Curl haltères', mus: 'Biceps', sets: 3, reps: [8, 12], rest: 60, load: [6, 1, 10], cue: 'Coudes collés au buste. Monte sans balancer, descends en 2 secondes.' },
+  squat: { name: 'Squat gobelet', mus: 'Cuisses, fessiers', sets: 4, reps: [10, 15], rest: 90, load: [8, 1, 10], vars: ['Squat gobelet', 'Squat gobelet tempo 3-1-1', 'Squat bulgare'], lvl: 0, cue: 'Haltère contre la poitrine. Genoux dans l\'axe des pieds. Descends profond, talons au sol.' },
+  fente: { name: 'Fentes arrière', mus: 'Cuisses, fessiers', sets: 3, reps: [8, 12], rest: 75, load: [6, 1, 10], cue: 'Grand pas en arrière, buste droit. Genou avant stable, pousse sur le talon. Séries par jambe.' },
+  sdt: { name: 'Soulevé de terre roumain', mus: 'Ischios, fessiers', sets: 3, reps: [10, 15], rest: 90, load: [8, 1, 10], cue: 'Dos plat, haltères le long des jambes. Recule les hanches, descends sous les genoux, remonte en poussant les hanches.' },
+  hip: { name: 'Hip thrust au sol', mus: 'Fessiers', sets: 3, reps: [12, 20], rest: 60, load: [10, 2, 20], cue: 'Haltère sur les hanches. Pousse avec les talons, serre les fessiers 1 seconde en haut.' },
+  mollets: { name: 'Mollets debout', mus: 'Mollets', sets: 3, reps: [15, 25], rest: 45, vars: ['Mollets deux jambes', 'Mollets une jambe'], lvl: 0, cue: 'Monte sur la pointe des pieds, pause 1 seconde, descends lentement. Haltères en main si besoin.' },
+  rameur: { name: 'Rameur ou marche rapide', mus: 'Cardio, zone 2', sets: 1, reps: [600, 1200], step: 60, timed: true, rest: 0, cue: 'Allure à laquelle tu peux encore parler. Si tu es essoufflé, ralentis.' }
+};
+const SESSIONS = {
+  A: { name: 'Haut du corps · poussée', short: 'Poussée', day: 1, ex: ['pompes', 'dev', 'elev', 'tri', 'dips', 'planche'], min: 50 },
+  B: { name: 'Bas du corps', short: 'Jambes', day: 2, ex: ['squat', 'fente', 'sdt', 'hip', 'mollets', 'planche'], min: 50 },
+  C: { name: 'Haut du corps · tirage', short: 'Tirage', day: 4, ex: ['trac', 'row', 'rowe', 'face', 'curl', 'pompes'], min: 50 },
+  D: { name: 'Corps entier + cardio', short: 'Full body', day: 6, ex: ['squat', 'pompes', 'row', 'fente', 'rameur'], min: 55 }
+};
+const PHASES = [
+  { to: 2, name: 'Adaptation', rpe: 'RPE 6-7 : il te reste 3 répétitions en réserve', setMod: -1 },
+  { to: 6, name: 'Volume', rpe: 'RPE 7-8 : il te reste 2 répétitions en réserve', setMod: 0 },
+  { to: 10, name: 'Intensité', rpe: 'RPE 8-9 : il te reste 1 répétition en réserve', setMod: 0 },
+  { to: 11, name: 'Pic', rpe: 'RPE 9 : bats tes records', setMod: 0 },
+  { to: 12, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 }
+];
+const WARMUP = ['3 min de marche rapide ou de rameur léger', '10 rotations de chaque épaule', '10 squats au poids du corps', '10 pompes inclinées lentes'];

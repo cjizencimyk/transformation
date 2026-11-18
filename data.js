@@ -361,38 +361,58 @@ const FAST = [
 
 /* ---------- Programme de sport ---------- */
 const EX = {
-  pompes: { name: 'Pompes', mus: 'Pectoraux, triceps', sets: 4, reps: [8, 15], rest: 75, vars: ['Pompes mains sur table', 'Pompes mains sur chaise', 'Pompes classiques', 'Pompes pieds surélevés'], lvl: 2, cue: 'Corps gainé du talon à la tête. Coudes à 45°. Descends la poitrine à un poing du sol.' },
-  dev: { name: 'Développé haltères au sol', mus: 'Pectoraux, épaules', sets: 3, reps: [8, 12], rest: 90, load: [6, 1, 10], cue: 'Omoplates serrées. Coudes à 45° du buste. Touche le sol, puis pousse en expirant.' },
+  pompes: { name: 'Pompes', mus: 'Pectoraux, triceps', sets: 3, reps: [8, 15], rest: 75, vars: ['Pompes mains sur table', 'Pompes mains sur chaise', 'Pompes classiques', 'Pompes pieds surélevés'], lvl: 2, cue: 'Corps gainé du talon à la tête. Coudes à 45°. Descends la poitrine à un poing du sol.' },
+  devinc: { name: 'Développé incliné haltères', mus: 'Pectoraux (haut), épaules', sets: 3, reps: [8, 12], rest: 90, load: [6, 1, 'M'], cue: 'Banc incliné à 30°. Omoplates serrées, coudes à 45°. Descends les haltères à hauteur de la poitrine, pousse en expirant.', nb: 'Sans banc : cale tes épaules sur un gros coussin ou fais des pompes pieds surélevés.' },
+  dev: { name: 'Développé couché haltères', mus: 'Pectoraux, épaules', sets: 3, reps: [8, 12], rest: 90, load: [6, 1, 'M'], cue: 'Allongé sur le banc plat. Omoplates serrées, coudes à 45° du buste. Descends à la poitrine, pousse en expirant.', nb: 'Au sol : arrête la descente quand les coudes touchent le sol.' },
   elev: { name: 'Élévations latérales', mus: 'Épaules', sets: 3, reps: [12, 20], rest: 60, load: [3, 1, 8], cue: 'Légère flexion du coude. Monte jusqu\'à l\'horizontale, descends en 2 secondes.' },
-  tri: { name: 'Extension triceps haltère', mus: 'Triceps', sets: 3, reps: [10, 15], rest: 60, load: [5, 1, 10], cue: 'Coude près de la tête. Descends l\'haltère derrière la nuque, étire, remonte.' },
+  ohp: { name: 'Développé épaules haltères', mus: 'Épaules', sets: 3, reps: [8, 12], rest: 90, load: [5, 1, 'M'], cue: 'Assis sur le banc dossier droit, ou debout. Gainé, sans cambrer. Pousse au-dessus de la tête, redescends à hauteur des oreilles.' },
+  tri: { name: 'Extension triceps haltère', mus: 'Triceps', sets: 2, reps: [10, 15], rest: 60, load: [5, 1, 'M'], cue: 'Coude près de la tête. Descends l\'haltère derrière la nuque, étire, remonte.' },
   dips: { name: 'Dips sur chaise', mus: 'Triceps, pectoraux', sets: 3, reps: [8, 15], rest: 60, vars: ['Dips genoux fléchis', 'Dips jambes tendues', 'Dips pieds surélevés'], lvl: 0, cue: 'Mains au bord de la chaise, dos proche du siège. Descends jusqu\'à 90° au coude.' },
-  planche: { name: 'Planche', mus: 'Sangle abdominale', sets: 3, reps: [30, 60], step: 5, timed: true, rest: 45, cue: 'Coudes sous les épaules, bassin aligné, fessiers serrés. Respire calmement.' },
-  trac: { name: 'Traction assistée par élastique', mus: 'Dos, biceps', sets: 4, reps: [4, 8], rest: 120, vars: ['Élastique épais', 'Élastique moyen', 'Élastique fin', 'Traction stricte'], lvl: 0, cue: 'Épaules basses avant de tirer. Menton au-dessus de la barre. Descente en 3 secondes.' },
-  row: { name: 'Rowing haltère à un bras', mus: 'Dos', sets: 4, reps: [8, 12], rest: 75, load: [8, 1, 10], cue: 'Dos plat, main sur un banc ou une chaise. Tire le coude vers la hanche, pause 1 seconde. Séries par bras.' },
-  rowe: { name: 'Rowing élastique', mus: 'Dos, arrière d\'épaule', sets: 3, reps: [12, 20], rest: 60, vars: ['Élastique léger', 'Élastique moyen', 'Élastique fort'], lvl: 1, cue: 'Assis jambes tendues, élastique autour des pieds. Tire vers le nombril, serre les omoplates.' },
-  face: { name: 'Tirage visage élastique', mus: 'Arrière d\'épaule', sets: 3, reps: [15, 20], rest: 45, vars: ['Élastique léger', 'Élastique moyen'], lvl: 0, cue: 'Élastique fixé à hauteur du visage. Tire vers le front, coudes hauts.' },
-  curl: { name: 'Curl haltères', mus: 'Biceps', sets: 3, reps: [8, 12], rest: 60, load: [6, 1, 10], cue: 'Coudes collés au buste. Monte sans balancer, descends en 2 secondes.' },
-  squat: { name: 'Squat gobelet', mus: 'Cuisses, fessiers', sets: 4, reps: [10, 15], rest: 90, load: [8, 1, 10], vars: ['Squat gobelet', 'Squat gobelet tempo 3-1-1', 'Squat bulgare'], lvl: 0, cue: 'Haltère contre la poitrine. Genoux dans l\'axe des pieds. Descends profond, talons au sol.' },
-  fente: { name: 'Fentes arrière', mus: 'Cuisses, fessiers', sets: 3, reps: [8, 12], rest: 75, load: [6, 1, 10], cue: 'Grand pas en arrière, buste droit. Genou avant stable, pousse sur le talon. Séries par jambe.' },
-  sdt: { name: 'Soulevé de terre roumain', mus: 'Ischios, fessiers', sets: 3, reps: [10, 15], rest: 90, load: [8, 1, 10], cue: 'Dos plat, haltères le long des jambes. Recule les hanches, descends sous les genoux, remonte en poussant les hanches.' },
-  hip: { name: 'Hip thrust au sol', mus: 'Fessiers', sets: 3, reps: [12, 20], rest: 60, load: [10, 2, 20], cue: 'Haltère sur les hanches. Pousse avec les talons, serre les fessiers 1 seconde en haut.' },
-  mollets: { name: 'Mollets debout', mus: 'Mollets', sets: 3, reps: [15, 25], rest: 45, vars: ['Mollets deux jambes', 'Mollets une jambe'], lvl: 0, cue: 'Monte sur la pointe des pieds, pause 1 seconde, descends lentement. Haltères en main si besoin.' },
-  rameur: { name: 'Rameur ou marche rapide', mus: 'Cardio, zone 2', sets: 1, reps: [600, 1200], step: 60, timed: true, rest: 0, cue: 'Allure à laquelle tu peux encore parler. Si tu es essoufflé, ralentis.' }
+  planche: { name: 'Gainage (planche)', mus: 'Sangle abdominale', sets: 2, reps: [30, 60], step: 5, timed: true, rest: 45, cue: 'Coudes sous les épaules, bassin aligné, fessiers serrés. Respire calmement.' },
+  trac: { name: 'Tirage vertical : traction assistée', mus: 'Dos, biceps', sets: 3, reps: [6, 10], rest: 120, vars: ['Élastique épais', 'Élastique moyen', 'Élastique fin', 'Traction stricte'], lvl: 0, cue: 'Barre de porte, élastique d\'assistance sous les genoux. Épaules basses avant de tirer. Menton au-dessus de la barre. Descente en 3 secondes.' },
+  rowe: { name: 'Rowing élastique (poulie basse)', mus: 'Dos, arrière d\'épaule', sets: 3, reps: [10, 15], rest: 60, vars: ['Élastique léger', 'Élastique moyen', 'Élastique fort', 'Élastique fort, pause 2 s'], lvl: 1, cue: 'Assis jambes tendues, élastique autour des pieds. Tire vers le nombril, serre les omoplates.' },
+  rowc: { name: 'Rowing buste appuyé', mus: 'Haut du dos', sets: 3, reps: [8, 12], rest: 75, load: [6, 1, 'M'], cue: 'Poitrine appuyée sur le banc incliné. Tire les coudes vers les hanches, serre les omoplates 1 seconde.', nb: 'Sans banc : rowing penché, dos plat, un genou sur une chaise. Séries par bras.' },
+  face: { name: 'Oiseau élastique (arrière d\'épaule)', mus: 'Arrière d\'épaule', sets: 3, reps: [12, 20], rest: 45, vars: ['Élastique léger', 'Élastique moyen', 'Élastique fort'], lvl: 0, cue: 'Bras tendus à hauteur d\'épaule, écarte l\'élastique vers l\'arrière en serrant les omoplates.' },
+  curl: { name: 'Curl biceps haltères', mus: 'Biceps', sets: 2, reps: [10, 15], rest: 60, load: [6, 1, 'M'], cue: 'Coudes collés au buste. Monte sans balancer, descends en 2 secondes.' },
+  hammer: { name: 'Curl marteau', mus: 'Biceps, avant-bras', sets: 2, reps: [10, 15], rest: 60, load: [6, 1, 'M'], cue: 'Paumes face à face, coudes collés. Monte sans balancer, descends lentement.' },
+  squat: { name: 'Squat gobelet', mus: 'Cuisses, fessiers', sets: 3, reps: [8, 12], rest: 90, load: [8, 2, 'M'], vars: ['Squat gobelet', 'Squat gobelet tempo 3-1-1', 'Squat gobelet pause 2 s'], lvl: 0, cue: 'Haltère contre la poitrine. Genoux dans l\'axe des pieds. Descends profond, talons au sol.' },
+  bulg: { name: 'Squat bulgare', mus: 'Cuisses, fessiers', sets: 3, reps: [8, 12], rest: 90, load: [4, 1, 'M'], cue: 'Pied arrière sur le banc. Descends à la verticale, genou avant stable, buste droit. Séries par jambe.' },
+  fente: { name: 'Fentes arrière', mus: 'Cuisses, fessiers', sets: 2, reps: [10, 12], rest: 75, load: [6, 1, 'M'], cue: 'Grand pas en arrière, buste droit. Genou avant stable, pousse sur le talon. Séries par jambe.' },
+  sdt: { name: 'Soulevé de terre roumain', mus: 'Ischios, fessiers', sets: 3, reps: [8, 12], rest: 90, load: [8, 2, 'M'], cue: 'Dos plat, haltères le long des jambes. Recule les hanches, descends sous les genoux, remonte en poussant les hanches.' },
+  hip: { name: 'Hip thrust', mus: 'Fessiers', sets: 3, reps: [10, 15], rest: 75, load: [10, 2, 'M2'], cue: 'Haut du dos sur le banc, haltères sur les hanches. Pousse avec les talons, serre les fessiers 1 seconde en haut.', nb: 'Sans banc : dos sur le canapé ou le sol.' },
+  legcurl: { name: 'Curl ischios', mus: 'Ischios', sets: 3, reps: [10, 15], rest: 75, vars: ['Pont fessier, talons surélevés', 'Curl glissé, 2 jambes (serviette)', 'Curl glissé, 1 jambe'], lvl: 0, cue: 'Sur le dos, talons sur une serviette posée sur sol lisse. Monte le bassin, tire les talons vers les fesses, reviens lentement.' },
+  chaise: { name: 'Chaise murale', mus: 'Quadriceps', sets: 3, reps: [30, 75], step: 5, timed: true, rest: 60, cue: 'Dos contre le mur, cuisses à l\'horizontale, genoux au-dessus des chevilles.' },
+  mollets: { name: 'Mollets debout', mus: 'Mollets', sets: 3, reps: [12, 20], rest: 45, vars: ['Mollets deux jambes', 'Mollets une jambe', 'Mollets une jambe, haltère'], lvl: 0, cue: 'Monte sur la pointe des pieds, pause 1 seconde, descends lentement. Haltères en main si besoin.' },
+  crunch: { name: 'Crunch', mus: 'Abdominaux', sets: 3, reps: [12, 15], rest: 45, vars: ['Crunch au sol', 'Crunch jambes levées', 'Crunch avec haltère sur la poitrine'], lvl: 0, cue: 'Bas du dos plaqué au sol. Enroule le haut du dos, expire en haut, redescends lentement.' },
+  kneeraise: { name: 'Relevés de genoux', mus: 'Abdominaux bas', sets: 3, reps: [10, 15], rest: 60, vars: ['Relevés de genoux allongé', 'Relevés de genoux suspendu', 'Relevés de jambes tendues suspendu'], lvl: 0, cue: 'Bassin enroulé. Monte les genoux vers la poitrine sans balancer, redescends lentement.' },
+  cardio: { name: 'Cardio zone 2', mus: 'Endurance', sets: 1, reps: [1200, 2700], step: 120, timed: true, rest: 0, cue: 'Tapis (marche rapide, légère inclinaison), rameur, vélo ou marche dehors. Tu dois pouvoir parler. Commence vers 4 à 5 km/h.' },
+  cardiof: { name: 'Cardio de fin de séance', mus: 'Endurance', sets: 1, reps: [900, 1200], step: 60, timed: true, rest: 0, cue: '15 à 20 minutes à allure modérée : tapis, rameur ou marche rapide.' },
+  row: { name: 'Rowing haltère à un bras', mus: 'Dos', sets: 4, reps: [8, 12], rest: 75, load: [8, 1, 10], cue: 'Dos plat, main sur un banc. Tire le coude vers la hanche. Séries par bras.' },
+  rameur: { name: 'Rameur ou marche rapide', mus: 'Cardio, zone 2', sets: 1, reps: [600, 1200], step: 60, timed: true, rest: 0, cue: 'Allure à laquelle tu peux encore parler.' }
 };
 const SESSIONS = {
-  A: { name: 'Haut du corps · poussée', short: 'Poussée', day: 1, ex: ['pompes', 'dev', 'elev', 'tri', 'dips', 'planche'], min: 50 },
-  B: { name: 'Bas du corps', short: 'Jambes', day: 2, ex: ['squat', 'fente', 'sdt', 'hip', 'mollets', 'planche'], min: 50 },
-  C: { name: 'Haut du corps · tirage', short: 'Tirage', day: 4, ex: ['trac', 'row', 'rowe', 'face', 'curl', 'pompes'], min: 50 },
-  D: { name: 'Corps entier + cardio', short: 'Full body', day: 6, ex: ['squat', 'pompes', 'row', 'fente', 'rameur'], min: 55 }
+  A: { name: 'Haut du corps A', short: 'Haut A', day: 1, ex: ['devinc', 'trac', 'dev', 'rowe', 'elev', 'curl', 'tri', 'cardiof'], min: 60 },
+  B: { name: 'Bas du corps A', short: 'Bas A', day: 2, ex: ['squat', 'sdt', 'fente', 'legcurl', 'mollets', 'crunch', 'planche'], min: 55 },
+  E: { name: 'Cardio du mercredi', short: 'Cardio', day: 3, ex: ['cardio'], min: 40, cardio: true },
+  C: { name: 'Haut du corps B · épaules et dos', short: 'Haut B', day: 4, ex: ['trac', 'ohp', 'rowc', 'pompes', 'elev', 'face', 'hammer', 'tri', 'cardiof'], min: 65 },
+  F: { name: 'Cardio du vendredi', short: 'Cardio', day: 5, ex: ['cardio'], min: 40, cardio: true },
+  D: { name: 'Bas du corps B · jambes et fessiers', short: 'Bas B', day: 6, ex: ['bulg', 'hip', 'legcurl', 'chaise', 'mollets', 'kneeraise', 'crunch'], min: 55 }
 };
+/* 26 semaines : adaptation, puis blocs de montée et une semaine de décharge toutes les 5 semaines */
 const PHASES = [
   { to: 2, name: 'Adaptation', rpe: 'RPE 6-7 : il te reste 3 répétitions en réserve', setMod: -1 },
-  { to: 6, name: 'Volume', rpe: 'RPE 7-8 : il te reste 2 répétitions en réserve', setMod: 0 },
-  { to: 10, name: 'Intensité', rpe: 'RPE 8-9 : il te reste 1 répétition en réserve', setMod: 0 },
-  { to: 11, name: 'Pic', rpe: 'RPE 9 : bats tes records', setMod: 0 },
-  { to: 12, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 }
+  { to: 5, name: 'Volume', rpe: 'RPE 7 : il te reste 2 à 3 répétitions en réserve', setMod: 0 },
+  { to: 6, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 },
+  { to: 10, name: 'Volume', rpe: 'RPE 7-8 : il te reste 2 répétitions en réserve', setMod: 0 },
+  { to: 11, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 },
+  { to: 15, name: 'Intensité', rpe: 'RPE 8 : il te reste 1 à 2 répétitions en réserve', setMod: 0 },
+  { to: 16, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 },
+  { to: 20, name: 'Intensité', rpe: 'RPE 8-9 : il te reste 1 répétition en réserve', setMod: 0 },
+  { to: 21, name: 'Décharge', rpe: 'RPE 6 : récupère, charges allégées', setMod: -1 },
+  { to: 25, name: 'Pic', rpe: 'RPE 9 : bats tes records', setMod: 0 },
+  { to: 26, name: 'Décharge', rpe: 'RPE 6 : bilan final, mesures et photos', setMod: -1 }
 ];
-const WARMUP = ['3 min de marche rapide ou de rameur léger', '10 rotations de chaque épaule', '10 squats au poids du corps', '10 pompes inclinées lentes'];
+const WARMUP = ['3 à 5 min de marche rapide, de vélo ou de rameur léger', '10 rotations de chaque épaule', '10 squats au poids du corps', '10 pompes inclinées lentes'];
 
 
 /* ---------- Classement automatique des recettes ---------- */
